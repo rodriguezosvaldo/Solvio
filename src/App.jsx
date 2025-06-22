@@ -21,7 +21,7 @@ function App() {
   }
 
   return (
-    <div className='bg-black flex flex-col max-w-[768px] h-screen overflow-hidden'>
+    <div className='bg-black flex flex-col w-[768px] h-screen overflow-hidden'>
       <div className='flex-1 w-full p-4 overflow-y-auto'>
         {renderActiveComponent()}
       </div>
