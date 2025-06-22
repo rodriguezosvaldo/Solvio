@@ -1,21 +1,31 @@
 import React from 'react'
 import TrendArrow from './TrendArrow'
+import CategoryAndValue from './CategoryAndValue'
 
 const GeneralBudget = () => {
-
-
     return (
-        <div className='grid grid-cols-2 gap-4'>
-            <div className='bg-blue-500 flex flex-col gap-4 w-full h-full p-4 rounded-3xl'>
+        <div className='grid grid-cols-2 grid-rows-3 gap-4 border border-white/60 rounded-3xl p-4 w-full h-full'>
+            <div className='flex items-center justify-center'>
                 <CategoryAndValue label='Assets' value='?' />
-                <CategoryAndValue label='Liabilities' value='?' />
-                <CategoryAndValue label='Total' value='?' />
-
             </div>
-            <div className='bg-red-500 flex flex-col gap-4 w-full h-full p-4 rounded-3xl'>
-                <TrendArrow direction='down' color='#16a34a' />
-                <TrendArrow direction='down' color='#16a34a' />
-                <TrendArrow direction='down' color='#16a34a' />
+            <div className='flex items-center justify-center'>
+                <TrendArrow direction='up' />
+            </div>
+            
+
+            <div className='flex items-center justify-center'>
+                <CategoryAndValue label='Liabilities' value='?' />
+            </div>
+            <div className='flex items-center justify-center'>
+                <TrendArrow direction='up' />
+            </div>
+            
+            
+            <div className='flex items-center justify-center'>
+                <CategoryAndValue label='Total' value='?' />
+            </div>
+            <div className='flex items-center justify-center'>
+                <TrendArrow direction='down' />
             </div>
         </div>
     )
