@@ -1,7 +1,7 @@
 import React from 'react'
 
 const PieChart = () => (
-    <div className='bg-green-500 flex flex-col gap-4 w-30 h-30 rounded-full justify-center items-center'>
+    <div className='bg-green-500 flex flex-col gap-4 w-[100px] h-[100px] rounded-full justify-center items-center'>
         <span>Pie Chart</span>
     </div>
 );
