@@ -1,34 +1,93 @@
-import { useState } from 'react'
-import Navbar from './components/navbar/Navbar'
-import Home from './components/home/Home'
-import Accounts from './components/accounts/Accounts'
-import Stats from './components/stats/Stats'
+import { useState, useEffect } from "react";
+import Navbar from "./components/navbar/Navbar";
+import Home from "./components/home/Home";
+import Accounts from "./components/accounts/Accounts";
+import Stats from "./components/stats/Stats";
+import supabase_client from "./supabase/client";
+import Login from "./components/Login";
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home')
+  const [activeTab, setActiveTab] = useState("home");
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const renderActiveComponent = () => {
-    switch (activeTab) {
-      case 'home':
-        return <Home />
-      case 'accounts':
-        return <Accounts />
-      case 'stats':
-        return <Stats />
-      default:
-        return <Home />
+  const Components = {
+    home: Home,
+    accounts: Accounts,
+    stats: Stats,
+    login: Login,
+  };
+
+  //Check if the new user is in the USERS table and insert them if they are not in the table
+  const insertUser = async (authUserId) => {
+    //data: users assign the data from the USERS table to the users variable
+    const { data: users, error } = await supabase_client
+      .from("Users")
+      .select("*")
+      .eq("auth_user", authUserId); //Selecting users from USERS table that match the users from supabase_client.auth.getUser()
+    if (error) console.log(error);
+    
+    //If the new user is not in the USERS table, insert them
+    if (users.length === 0) {
+      await supabase_client
+        .from("Users")
+        .insert({
+          auth_user: authUserId,
+        });
+    } else {
+      setLoading(false);
     }
-  }
+  };
+
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data, error } = await supabase_client.auth.getUser();
+        if (error) throw error;
+        setUser(data.user);
+        console.log(data.user);
+        insertUser(data.user.id);
+      } catch (err) {
+        setUser(null); // No user or error
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkUser();
+  }, []);
+
+  const renderComponent = () => {
+    if (loading) {
+      return <div>Loading...</div>;
+    }
+
+    if (!user) {
+      return <Login />;
+    }
+
+    const Component = Components[activeTab];
+    return Component ? <Component /> : <Home />;
+  };
+
+  const renderNavbar = () => {
+    if (loading || !user) {
+      return "";
+    } else {
+      return <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />;
+    }
+  };
 
   return (
-    <div className='bg-black flex flex-col w-[768px] h-screen overflow-hidden'>
-      <div className='flex-1 w-full p-4 overflow-y-auto'>
-        {renderActiveComponent()}
+    <div className="bg-black flex flex-col w-[768px] h-screen overflow-hidden">
+      <div className="flex-1 w-full p-4 overflow-y-auto">
+        <div className="transition-all duration-300 ease-in-out">
+          {renderComponent()}
+        </div>
       </div>
-
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {renderNavbar()}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
