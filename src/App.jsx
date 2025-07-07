@@ -18,44 +18,28 @@ function App() {
     login: Login,
   };
 
-  //Check if the new user is in the USERS table and insert them if they are not in the table
-  const insertUser = async (authUserId) => {
-    //data: users assign the data from the USERS table to the users variable
-    const { data: users, error } = await supabase_client
-      .from("Users")
-      .select("*")
-      .eq("auth_user", authUserId); //Selecting users from USERS table that match the users from supabase_client.auth.getUser()
-    if (error) console.log(error);
-    
-    //If the new user is not in the USERS table, insert them
-    if (users.length === 0) {
-      await supabase_client
-        .from("Users")
-        .insert({
-          auth_user: authUserId,
-        });
-    } else {
-      setLoading(false);
-    }
-  };
-
 
   useEffect(() => {
     const checkUser = async () => {
       try {
         const { data, error } = await supabase_client.auth.getUser();
-        if (error) throw error;
+        if (error) {
+          console.log('No user ++++++++++++++');
+          console.log(error);
+          setUser(null);
+          return;
+        }
         setUser(data.user);
         console.log(data.user);
-        insertUser(data.user.id);
-      } catch (err) {
-        setUser(null); // No user or error
+      } catch (error) {
+        setUser(null);
+        console.log(error);
       } finally {
         setLoading(false);
       }
     };
     checkUser();
-  }, []);
+  }, []); 
 
   const renderComponent = () => {
     if (loading) {
@@ -67,7 +51,7 @@ function App() {
     }
 
     const Component = Components[activeTab];
-    return Component ? <Component /> : <Home />;
+    return Component ? <Component userId={user.id} /> : <Home />;
   };
 
   const renderNavbar = () => {

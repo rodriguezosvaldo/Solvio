@@ -23,7 +23,7 @@ const SingleAccount = ({ id, name, accountBalance, deleteAccount, processCSV }) 
       <span className="text-sm text-gray-200">{accountBalance}</span>
       <button
         className="bg-green-400 flex w-10 h-10 justify-center items-center rounded-2xl hover:scale-110 transition-all duration-300"
-        onClick={deleteAccount(id)}
+        onClick={() => deleteAccount(id)}
       >
         <svg
           viewBox="0 0 1024 1024"

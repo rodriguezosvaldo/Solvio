@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
-import Add from "./Add";
 import CategoryAndValue from "../home/CategoryAndValue";
 import AccountsByType from "./AccountsByType";
+import AddAccount from "./AddAccount";
 import supabase_client from "../../supabase/client";
 
-const Accounts = () => {
+const Accounts = ({ userId }) => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
-  //Getting data from the Accounts table
+  //Getting all accounts from the Accounts table
   useEffect(() => {
     const fetchAccounts = async () => {
       const { data, error } = await supabase_client
@@ -21,6 +22,8 @@ const Accounts = () => {
         console.log(error);
       } else {
         setAccounts(data);
+        console.log(data); //debugging+++++++++++++++++++++++++++++++++
+        console.log(userId); //debugging+++++++++++++++++++++++++++++++++
       }
       setLoading(false);
     };
@@ -33,17 +36,23 @@ const Accounts = () => {
     .reduce((sum, acc) => sum + acc.balance, 0);
   const liabilities = accounts
     .filter((acc) => acc.balance < 0)
-    .reduce((sum, acc) => sum + acc.balance, 0);
+    .reduce((sum, acc) => sum + acc.balance, 0)*-1;
   const total = assets - liabilities;
 
   //Getting props for AccountsbyType
   const typeCash = accounts.filter((account) => account.type === "cash");
+  const typeCashTotalBalance = typeCash.reduce((sum, acc) => sum + acc.balance, 0);
   const typeDebit = accounts.filter((account) => account.type === "debit");
+  const typeDebitTotalBalance = typeDebit.reduce((sum, acc) => sum + acc.balance, 0);
   const typeCredit = accounts.filter((account) => account.type === "credit");
+  const typeCreditTotalBalance = typeCredit.reduce((sum, acc) => sum + acc.balance, 0);
   const typeSavings = accounts.filter((account) => account.type === "savings");
+  const typeSavingsTotalBalance = typeSavings.reduce((sum, acc) => sum + acc.balance, 0);
 
   const processCSV = () => {
-    console.log("Procesando CSV. Implementar usando AI para adaptar el CSV a la base de datos");
+    console.log(
+      "Procesando CSV. Implementar usando AI para adaptar el CSV a la base de datos"
+    );
   };
 
   const deleteAccount = async (accountId) => {
@@ -63,61 +72,112 @@ const Accounts = () => {
     }
   };
 
-  if (loading) return <div>Loading accounts...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const beforeRenderingAccounts = () => {
+    if (loading)
+      return (
+        <div className="w-full h-full flex justify-center items-center text-white">
+          Loading accounts...
+        </div>
+      );
+    if (error)
+      return (
+        <div className="w-full h-full flex justify-center items-center text-white">
+          Error: {error}
+        </div>
+      );
+    if (!typeCash.length && !typeDebit.length && !typeCredit.length && !typeSavings.length)
+      return (
+        <div className="w-full h-full flex justify-center items-center text-white">
+          No accounts found
+        </div>
+      );
+  };
 
+  const renderingAccountsByType = () => {
+    if (typeCash.length > 0) {
+      return (
+        <AccountsByType 
+        type="cash" 
+        totalbalance={typeCashTotalBalance} 
+        accounts={typeCash} 
+        deleteAccount={deleteAccount}
+        processCSV={processCSV}
+        />
+      );
+    }
+    if (typeDebit.length > 0) {
+      return (
+        <AccountsByType 
+        type="debit" 
+        totalbalance={typeDebitTotalBalance} 
+        accounts={typeDebit} 
+        deleteAccount={deleteAccount}
+        processCSV={processCSV}
+        />
+      );
+    }
+    if (typeCredit.length > 0) {
+      return (
+        <AccountsByType 
+        type="credit" 
+        totalbalance={typeCreditTotalBalance} 
+        accounts={typeCredit} 
+        deleteAccount={deleteAccount}
+        processCSV={processCSV}
+        />
+      );
+    }
+    if (typeSavings.length > 0) {
+      return (
+        <AccountsByType 
+        type="savings" 
+        totalbalance={typeSavingsTotalBalance} 
+        accounts={typeSavings} 
+        deleteAccount={deleteAccount}
+        processCSV={processCSV}
+        />
+      );
+    }
+  };
+
+  const addAccount = () => {
+    setShowAddForm(true);
+  };
+
+  const handleCancelAdd = () => {
+    setShowAddForm(false);
+  };
+
+  const updatingAccounts = (newAccount) => {
+    setAccounts(prevAccounts => [...prevAccounts, newAccount]);
+  };
+
+  // If showAddForm is true, render the AddAccount component
+  if (showAddForm) {
+    return (
+      <AddAccount 
+        cancelAddAccount={handleCancelAdd}
+        newAccount={updatingAccounts}
+        userId={userId}
+      />
+    );
+  }
+
+  // Otherwise render the accounts list
   return (
     <div className="flex flex-col gap-8 text-white p-6 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
-      <Add onClick={() => {}} />
+      <button className='bg-green-700 flex w-10 h-10 self-end justify-center items-center rounded-2xl'
+        onClick={addAccount}
+        >+</button>
       <div className="flex gap-2 w-full justify-around items-center">
         <CategoryAndValue label="Assets" value={assets} />
         <CategoryAndValue label="Liabilities" value={liabilities} />
         <CategoryAndValue label="Total" value={total} />
       </div>
-      {typeCash.map((account) => (
-        <AccountsByType
-          type={account.type}
-          totalbalance={account.balance}
-          name={account.name}
-          id={account.id}
-          accountBalance={account.accountBalance}
-          deleteAccount={() => deleteAccount(account.id)}
-          processCSV={() => processCSV(account.id)}
-        />
-      ))}
-      {typeDebit.map((account) => (
-        <AccountsByType
-          type={account.type}
-          totalbalance={account.balance}
-          name={account.name}
-          id={account.id}
-          accountBalance={account.accountBalance}
-          deleteAccount={() => deleteAccount(account.id)}
-          processCSV={() => processCSV(account.id)}
-        />
-      ))}
-      {typeCredit.map((account) => (
-        <AccountsByType
-          type={account.type}
-          totalbalance={account.balance}
-          name={account.name}
-          id={account.id}
-          accountBalance={account.accountBalance}
-          deleteAccount={() => deleteAccount(account.id)}
-          processCSV={() => processCSV(account.id)}
-        />
-      ))}
-      {typeSavings.map((account) => (
-        <AccountsByType
-          type={account.type}
-          totalbalance={account.balance}
-          name={account.name}
-          id={account.id}
-          accountBalance={account.accountBalance}
-          deleteAccount={() => deleteAccount(account.id)}
-          processCSV={() => processCSV(account.id)}
-        />
-      ))}
+      <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
+        {beforeRenderingAccounts()}
+        {renderingAccountsByType()}
+      </div>
     </div>
   );
 };
