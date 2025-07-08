@@ -22,8 +22,8 @@ const Accounts = ({ userId }) => {
         console.log(error);
       } else {
         setAccounts(data);
-        console.log(data); //debugging+++++++++++++++++++++++++++++++++
-        console.log(userId); //debugging+++++++++++++++++++++++++++++++++
+        console.log("data+++++++++++++++++++++++++++++++++", data); //debugging+++++++++++++++++++++++++++++++++
+        console.log("userId+++++++++++++++++++++++++++++++++", userId); //debugging+++++++++++++++++++++++++++++++++
       }
       setLoading(false);
     };
@@ -34,20 +34,17 @@ const Accounts = ({ userId }) => {
   const assets = accounts
     .filter((acc) => acc.balance >= 0)
     .reduce((sum, acc) => sum + acc.balance, 0);
-  const liabilities = accounts
-    .filter((acc) => acc.balance < 0)
-    .reduce((sum, acc) => sum + acc.balance, 0)*-1;
+  const liabilities =
+    accounts
+      .filter((acc) => acc.balance < 0)
+      .reduce((sum, acc) => sum + acc.balance, 0) * -1;
   const total = assets - liabilities;
 
   //Getting props for AccountsbyType
   const typeCash = accounts.filter((account) => account.type === "cash");
-  const typeCashTotalBalance = typeCash.reduce((sum, acc) => sum + acc.balance, 0);
   const typeDebit = accounts.filter((account) => account.type === "debit");
-  const typeDebitTotalBalance = typeDebit.reduce((sum, acc) => sum + acc.balance, 0);
   const typeCredit = accounts.filter((account) => account.type === "credit");
-  const typeCreditTotalBalance = typeCredit.reduce((sum, acc) => sum + acc.balance, 0);
   const typeSavings = accounts.filter((account) => account.type === "savings");
-  const typeSavingsTotalBalance = typeSavings.reduce((sum, acc) => sum + acc.balance, 0);
 
   const processCSV = () => {
     console.log(
@@ -85,56 +82,28 @@ const Accounts = ({ userId }) => {
           Error: {error}
         </div>
       );
-    if (!typeCash.length && !typeDebit.length && !typeCredit.length && !typeSavings.length)
+    else if (!typeCash && !typeCredit && !typeDebit && !typeSavings) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
           No accounts found
         </div>
       );
+    }
   };
 
-  const renderingAccountsByType = () => {
-    if (typeCash.length > 0) {
-      return (
-        <AccountsByType 
-        type="cash" 
-        totalbalance={typeCashTotalBalance} 
-        accounts={typeCash} 
-        deleteAccount={deleteAccount}
-        processCSV={processCSV}
-        />
+  const renderingAccountsByType = (accountType) => {
+    if (accountType.length > 0) {
+      const totalBalance = accountType.reduce(
+        (sum, acc) => sum + acc.balance,
+        0
       );
-    }
-    if (typeDebit.length > 0) {
       return (
-        <AccountsByType 
-        type="debit" 
-        totalbalance={typeDebitTotalBalance} 
-        accounts={typeDebit} 
-        deleteAccount={deleteAccount}
-        processCSV={processCSV}
-        />
-      );
-    }
-    if (typeCredit.length > 0) {
-      return (
-        <AccountsByType 
-        type="credit" 
-        totalbalance={typeCreditTotalBalance} 
-        accounts={typeCredit} 
-        deleteAccount={deleteAccount}
-        processCSV={processCSV}
-        />
-      );
-    }
-    if (typeSavings.length > 0) {
-      return (
-        <AccountsByType 
-        type="savings" 
-        totalbalance={typeSavingsTotalBalance} 
-        accounts={typeSavings} 
-        deleteAccount={deleteAccount}
-        processCSV={processCSV}
+        <AccountsByType
+          type={accountType[0].type}
+          totalbalance={totalBalance}
+          accounts={accountType}
+          deleteAccount={deleteAccount}
+          processCSV={processCSV}
         />
       );
     }
@@ -149,13 +118,13 @@ const Accounts = ({ userId }) => {
   };
 
   const updatingAccounts = (newAccount) => {
-    setAccounts(prevAccounts => [...prevAccounts, newAccount]);
+    setAccounts((prevAccounts) => [...prevAccounts, newAccount]);
   };
 
   // If showAddForm is true, render the AddAccount component
   if (showAddForm) {
     return (
-      <AddAccount 
+      <AddAccount
         cancelAddAccount={handleCancelAdd}
         newAccount={updatingAccounts}
         userId={userId}
@@ -166,9 +135,12 @@ const Accounts = ({ userId }) => {
   // Otherwise render the accounts list
   return (
     <div className="flex flex-col gap-8 text-white p-6 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
-      <button className='bg-green-700 flex w-10 h-10 self-end justify-center items-center rounded-2xl'
+      <button
+        className="bg-green-700 flex w-10 h-10 self-end justify-center items-center rounded-2xl"
         onClick={addAccount}
-        >+</button>
+      >
+        +
+      </button>
       <div className="flex gap-2 w-full justify-around items-center">
         <CategoryAndValue label="Assets" value={assets} />
         <CategoryAndValue label="Liabilities" value={liabilities} />
@@ -176,7 +148,10 @@ const Accounts = ({ userId }) => {
       </div>
       <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
         {beforeRenderingAccounts()}
-        {renderingAccountsByType()}
+        {renderingAccountsByType(typeCash)}
+        {renderingAccountsByType(typeCredit)}
+        {renderingAccountsByType(typeDebit)}
+        {renderingAccountsByType(typeSavings)}
       </div>
     </div>
   );
