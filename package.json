@@ -13,6 +13,7 @@
     "@midudev/tailwind-animations": "^0.2.0",
     "@supabase/supabase-js": "^2.50.1",
     "@tailwindcss/vite": "^4.1.10",
+    "papaparse": "^5.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "^3.0.0",

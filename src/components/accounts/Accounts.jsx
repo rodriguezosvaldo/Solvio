@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import CategoryAndValue from "../home/CategoryAndValue";
 import AccountsByType from "./AccountsByType";
 import AddAccount from "./AddAccount";
 import supabase_client from "../../supabase/client";
+import DefineCategoryAndType from "./DefineCategoryAndType";
+import Papa from "papaparse";
 
 const Accounts = ({ userId }) => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showDefineCategoryAndType, setShowDefineCategoryAndType] = useState(false);
+  const [bankStatement, setBankStatement] = useState([]);
 
   //Getting all accounts from the Accounts table
   useEffect(() => {
@@ -46,13 +50,30 @@ const Accounts = ({ userId }) => {
   const typeCredit = accounts.filter((account) => account.type === "credit");
   const typeSavings = accounts.filter((account) => account.type === "savings");
 
-  const processCSV = () => {
-    console.log(
-      "Procesando CSV. Implementar usando AI para adaptar el CSV a la base de datos"
-    );
-  };
 
-  const deleteAccount = async (accountId) => {
+  const processCSV = useCallback((id, file) => {
+    console.log("Processing CSV+++++++++++++++++++++++++++++++++");
+    // Parsing the CSV file using Papa Parse library to get the bank statement in an array of objects
+    Papa.parse(file, {
+      header: true, // Assume that the first row is the header
+      skipEmptyLines: true,
+      // When parsing is done the function inside complete is executed
+      complete: function (results) {
+        setBankStatement(results.data);
+      },
+    });
+  }, []);
+  // Making sure that the bankStatement is not empty before showing the DefineCategoryAndType component
+  useEffect(() => {
+    if (bankStatement.length > 0) {
+      console.log("use effect+++++++++++++++++++++++++++++++++");
+      console.log("bankStatement+++++++++++++++++++++++++++++++++", bankStatement);
+      setShowDefineCategoryAndType(true);
+    }
+  }, [bankStatement]);
+
+
+  const deleteAccount = useCallback(async (accountId) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this account?"
     );
@@ -65,9 +86,9 @@ const Accounts = ({ userId }) => {
     if (error) {
       console.log(error);
     } else {
-      setAccounts(accounts.filter((account) => account.id !== accountId));
+      setAccounts(prevAccounts => prevAccounts.filter((account) => account.id !== accountId));
     }
-  };
+  }, []);
 
   const beforeRenderingAccounts = () => {
     if (loading)
@@ -109,17 +130,17 @@ const Accounts = ({ userId }) => {
     }
   };
 
-  const addAccount = () => {
+  const addAccount = useCallback(() => {
     setShowAddForm(true);
-  };
+  }, []);
 
-  const handleCancelAdd = () => {
+  const handleCancelAdd = useCallback(() => {
     setShowAddForm(false);
-  };
+  }, []);
 
-  const updatingAccounts = (newAccount) => {
+  const updatingAccounts = useCallback((newAccount) => {
     setAccounts((prevAccounts) => [...prevAccounts, newAccount]);
-  };
+  }, []);
 
   // If showAddForm is true, render the AddAccount component
   if (showAddForm) {
@@ -128,6 +149,16 @@ const Accounts = ({ userId }) => {
         cancelAddAccount={handleCancelAdd}
         newAccount={updatingAccounts}
         userId={userId}
+      />
+    );
+  }
+
+  // If showDefineCategoryAndType is true, render the DefineCategoryAndType component
+  if (showDefineCategoryAndType) {
+    return (
+      <DefineCategoryAndType
+        bankStatement={bankStatement}
+        setShowDefineCategoryAndType={() => setShowDefineCategoryAndType(false)}
       />
     );
   }
