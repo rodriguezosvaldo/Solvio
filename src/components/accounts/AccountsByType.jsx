@@ -13,8 +13,9 @@ const AccountsByType = ({ type, totalbalance, accounts, deleteAccount, processCS
           {accounts.map((account) => (
             <SingleAccount
               key={account.id}
-              id={account.id}
-              name={account.name}
+              accountId={account.id}
+              accountName={account.name}
+              accountType={account.type}
               accountBalance={account.balance}
               deleteAccount={deleteAccount}
               processCSV={processCSV}

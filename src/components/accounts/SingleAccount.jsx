@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 
-const SingleAccount = ({ id, name, accountBalance, deleteAccount, processCSV }) => {
+const SingleAccount = ({ accountId, accountName, accountType, accountBalance, deleteAccount, processCSV }) => {
   const fileInputRef = useRef(null); //native file selector
 
   const csvClick = () => {
@@ -10,7 +10,7 @@ const SingleAccount = ({ id, name, accountBalance, deleteAccount, processCSV }) 
   const uploadCSV = (event) => {
     const file = event.target.files[0];
     if (file && file.type === "text/csv") {
-      processCSV(id, file);
+      processCSV(accountId, accountType, file);
     } else {
       alert("Please select a valid CSV file");
     }
@@ -19,11 +19,11 @@ const SingleAccount = ({ id, name, accountBalance, deleteAccount, processCSV }) 
 
   return (
     <div className="flex justify-between items-center w-full border-b-2 border-gray-600/40 p-2">
-      <span className="text-sm text-gray-200">{name}</span>
+      <span className="text-sm text-gray-200">{accountName}</span>
       <span className="text-sm text-gray-200">{accountBalance}</span>
       <button
         className="bg-green-400 flex w-10 h-10 justify-center items-center rounded-2xl hover:scale-110 transition-all duration-300"
-        onClick={() => deleteAccount(id)}
+        onClick={() => deleteAccount(accountId)}
       >
         <svg
           viewBox="0 0 1024 1024"

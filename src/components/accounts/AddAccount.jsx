@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import supabase_client from "../../supabase/client";
 
-const AddAccount = ({ cancelAddAccount, newAccount, userId }) => {
+const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
   const [formData, setFormData] = useState({
     name: "",
     type: "",
@@ -40,7 +40,7 @@ const AddAccount = ({ cancelAddAccount, newAccount, userId }) => {
       } else {
         console.log("Account added successfully:", formDataAccount[0]);
         newAccount(formDataAccount[0]); //formDataAccount is an array with an object inside containing the new account data
-        cancelAddAccount(); // Return to accounts list
+        leaveAddAccount(); // Return to accounts list
       }
     } catch (error) {
       console.error("Error:", error);
@@ -86,10 +86,8 @@ const AddAccount = ({ cancelAddAccount, newAccount, userId }) => {
             className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500"
           >
             <option value="" disabled>Select an account type</option>
-            <option value="cash">Cash</option>
             <option value="debit">Debit</option>
             <option value="credit">Credit</option>
-            <option value="savings">Savings</option>
           </select>
         </div>
 
@@ -116,7 +114,7 @@ const AddAccount = ({ cancelAddAccount, newAccount, userId }) => {
           {loading ? "Adding..." : "Add Account"}
         </button>
         <button
-          onClick={cancelAddAccount}
+          onClick={leaveAddAccount}
           className="bg-red-600 text-white hover:shadow-gray-200 hover:shadow-lg px-6 py-3 rounded-lg font-semibold transition-colors"
         >
           Cancel

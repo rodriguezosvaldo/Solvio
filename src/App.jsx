@@ -8,7 +8,7 @@ import Login from "./components/Login";
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
-  const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const Components = {
@@ -18,7 +18,7 @@ function App() {
     login: Login,
   };
 
-
+// Getting the user from the database
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -26,13 +26,12 @@ function App() {
         if (error) {
           console.log('No user ++++++++++++++');
           console.log(error);
-          setUser(null);
+          setUserId(null);
           return;
         }
-        setUser(data.user);
-        console.log(data.user);
+        setUserId(data.user.id);
       } catch (error) {
-        setUser(null);
+        setUserId(null);
         console.log(error);
       } finally {
         setLoading(false);
@@ -46,16 +45,16 @@ function App() {
       return <div>Loading...</div>;
     }
 
-    if (!user) {
+    if (!userId) {
       return <Login />;
     }
 
     const Component = Components[activeTab];
-    return Component ? <Component userId={user.id} /> : <Home />;
+    return Component ? <Component userId={userId} /> : <Home />;
   };
 
   const renderNavbar = () => {
-    if (loading || !user) {
+    if (loading || !userId) {
       return "";
     } else {
       return <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />;
