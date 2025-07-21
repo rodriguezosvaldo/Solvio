@@ -14,6 +14,7 @@ const Accounts = ({ userId }) => {
   // const [expenseCategories, setExpenseCategories] = useState([]); // This is for the AI prompt
   // const [incomeCategories, setIncomeCategories] = useState([]); // This is for the AI prompt
   const [transactionsInDatabase, setTransactionsInDatabase] = useState([]);
+  const [refreshTransactions, setRefreshTransactions] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -88,12 +89,14 @@ const Accounts = ({ userId }) => {
           delete transaction.categories;
         });
         setTransactionsInDatabase(data);
+        console.log("USEFFECT...transactionsInDatabase++++++++++", data);
+        setRefreshTransactions(false);
       }
     };
     fetchTransactions();
-  }, []);
+  }, [refreshTransactions]);
 
-  // Making sure that the bankStatement is not empty before showing the DefineCategoryAndType component
+  // Making sure that the bankStatement is not empty before showing the DefineCategory component
   useEffect(() => {
     if (bankStatement.data.length > 0) {
       setShowDefineCategory(true);
@@ -426,7 +429,11 @@ const Accounts = ({ userId }) => {
         accountId={bankStatement.accountId}
         bankStatement={bankStatement.data}
         categoriesInDatabase={categoriesInDatabase}
-        leaveDefineCategory={() => setShowDefineCategory(false)}
+        transactionsInDatabase={transactionsInDatabase}
+        leaveDefineCategory={() => {
+          setShowDefineCategory(false);
+          setRefreshTransactions(true);
+        }}
       />
     );
   }

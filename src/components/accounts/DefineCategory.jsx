@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import supabase_client from '../../supabase/client';
 
 
-const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase, leaveDefineCategory}) => {
+const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase, transactionsInDatabase, leaveDefineCategory}) => {
 
     const [categoryValues, setCategoryValues] = useState({});
 
@@ -40,7 +40,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     const insertData = async (transactionsReadyToSave) => {
         const { data, error } = await supabase_client
         .from("transactions")
-        .upsert(transactionsReadyToSave, { onConflict: ['user_id', 'account_id', 'date', 'amount', 'description']})
+        .insert(transactionsReadyToSave)
         .select(); // This returns all the data of the transactions inserted, including auto-generated fields like id, created_at, etc.
         if (error) {
             console.error("Error inserting transactions:", error); // Debugging++++++++++++++++
@@ -51,14 +51,33 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
 
 
     const saveAllTransactions = () => {
-        const transactionsReadyToSave = bankStatementLowerCase.map((transaction, index) => ({
+        // Avoid inserting duplicate transactions
+        console.log("CHECKING TO AVOID DUPLICATE TRANSACTIONS...transactionsInDatabase++++++++++", transactionsInDatabase);
+        let bankStatementToSave;
+        if (Array.isArray(transactionsInDatabase) && transactionsInDatabase.length > 0) {
+            console.log("There are transactions in the database+++++++++");
+            bankStatementToSave = bankStatementLowerCase.filter((transaction) => {
+                // .some() returns true if at least one element in transactionsInDatabase satisfies the condition
+                return transactionsInDatabase.some((transactionInDatabase) => {
+                    transactionInDatabase.user_id === userId &&
+                    transactionInDatabase.account_id === accountId &&
+                    transactionInDatabase.date === transaction.date &&
+                    Number(transactionInDatabase.amount) === Math.abs(Number(transaction.amount)) &&
+                    transactionInDatabase.description === transaction.description
+                })
+            })
+        } else {
+            console.log("There are no transactions in the database+++++++++");
+            bankStatementToSave = bankStatementLowerCase;
+        }
+        const transactionsReadyToSave = bankStatementToSave.map((transaction, index) => ({
             user_id: userId,
             account_id: accountId,
             date: transaction.date,
             amount: Math.abs(Number(transaction.amount)),
             category_id: categoryValues[index],
             description: transaction.description,
-        }));        
+        }));
         insertData(transactionsReadyToSave);
         leaveDefineCategory();
     }
