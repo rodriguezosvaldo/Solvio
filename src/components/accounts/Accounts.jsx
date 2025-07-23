@@ -10,7 +10,7 @@ import Papa from "papaparse";
 
 const Accounts = ({ userId }) => {
   const [accounts, setAccounts] = useState([]);
-  const [typeCash, setTypeCash] = useState([[], 0]);
+  const [typeCash, setTypeCash] = useState([[], 0]); // [accounts, balance]
   const [typeDebit, setTypeDebit] = useState([[], 0]);
   const [typeCredit, setTypeCredit] = useState([[], 0]);
   const [typeSavings, setTypeSavings] = useState([[], 0]);
@@ -19,8 +19,6 @@ const Accounts = ({ userId }) => {
   // const [incomeCategories, setIncomeCategories] = useState([]); // This is for the AI prompt
   const [transactionsInDatabase, setTransactionsInDatabase] = useState([]);
   const [refreshTransactions, setRefreshTransactions] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDefineCategory, setShowDefineCategory] = useState(false);
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
@@ -28,24 +26,56 @@ const Accounts = ({ userId }) => {
   const [liabilities, setLiabilities] = useState(0);
   const [total, setTotal] = useState(0);
 
+
+  // Getting all transactions from the database
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      const { data: transactions, error: errorTransactions } = await supabase_client
+        .from("transactions")
+        .select("*, categories(category)")
+        .eq("user_id", userId);
+      if (errorTransactions) {
+        console.log(errorTransactions);
+      } else {
+        transactions.forEach(transaction => {
+          transaction.category = transaction.categories.category;
+          delete transaction.categories;
+        });
+        setTransactionsInDatabase(transactions);
+      }
+    };
+    fetchTransactions();
+    setRefreshTransactions(false);
+  }, [refreshTransactions]);
+
   // Getting all accounts from the database
   useEffect(() => {
     const fetchAccounts = async () => {
-      const { data, error } = await supabase_client
+      const { data: accounts, error: errorAccounts } = await supabase_client
         .from("accounts")
         .select("*")
         .eq("is_active", true)
         .eq("user_id", userId);
-      if (error) {
-        setError(error.message);
-        console.log(error);
+      if (errorAccounts) {
+        console.log(errorAccounts);
       } else {
-        setAccounts(data);
-        setLoading(false);
+        const accountsData = accounts.map(account => {
+          const accountTransactions = transactionsInDatabase.filter(transaction => transaction.account_id === account.id);
+          const expenseBalances = accountTransactions.filter(transaction => transaction.category === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
+          const transferOutBalances = accountTransactions.filter(transaction => transaction.category === "transferOut").reduce((sum, transaction) => sum + transaction.amount, 0);
+          const incomeBalances = accountTransactions.filter(transaction => transaction.category === "income").reduce((sum, transaction) => sum + transaction.amount, 0); 
+          const transferInBalances = accountTransactions.filter(transaction => transaction.category === "transferIn").reduce((sum, transaction) => sum + transaction.amount, 0);
+          const accountBalance = Math.round(((incomeBalances + transferInBalances) - (expenseBalances + transferOutBalances))*100)/100;
+          return {
+            ...account,
+            balance: accountBalance
+          }
+        });
+        setAccounts(accountsData);
       }
     };
     fetchAccounts();
-  }, []);
+  }, [transactionsInDatabase]); // This is to make sure that the accounts balances are updated when the transactions are updated
 
   // Getting all categories from the database
   useEffect(() => {
@@ -78,18 +108,18 @@ const Accounts = ({ userId }) => {
 
   // Getting accounts separated by type and their balances (typeCash, typeDebit, typeCredit, typeSavings) 
   useEffect(() => {
-    const getAccountsByTypeAndBalances = async () => {
+    const getAccountsByTypeAndBalances = () => {
       const typeCashAccounts = accounts.filter((account) => account.type === "cash");
-      const typeCashBalance = await totalBalanceByAccountType(typeCashAccounts);
+      const typeCashBalance = totalBalanceByAccountType(typeCashAccounts);
       setTypeCash([typeCashAccounts, typeCashBalance]);
       const typeDebitAccounts = accounts.filter((account) => account.type === "debit");
-      const typeDebitBalance = await totalBalanceByAccountType(typeDebitAccounts);
+      const typeDebitBalance = totalBalanceByAccountType(typeDebitAccounts);
       setTypeDebit([typeDebitAccounts, typeDebitBalance]);
       const typeCreditAccounts = accounts.filter((account) => account.type === "credit");
-      const typeCreditBalance = await totalBalanceByAccountType(typeCreditAccounts);
+      const typeCreditBalance = totalBalanceByAccountType(typeCreditAccounts);
       setTypeCredit([typeCreditAccounts, typeCreditBalance]);
       const typeSavingsAccounts = accounts.filter((account) => account.type === "savings");
-      const typeSavingsBalance = await totalBalanceByAccountType(typeSavingsAccounts);
+      const typeSavingsBalance = totalBalanceByAccountType(typeSavingsAccounts);
       setTypeSavings([typeSavingsAccounts, typeSavingsBalance]);
     };
     getAccountsByTypeAndBalances();
@@ -101,38 +131,13 @@ const Accounts = ({ userId }) => {
       const totalBalances = [typeCash[1], typeDebit[1], typeCredit[1], typeSavings[1]];
       const assets = totalBalances.filter(balance => balance > 0).reduce((sum, balance) => sum + balance, 0);
       const liabilities = totalBalances.filter(balance => balance < 0).reduce((sum, balance) => sum + balance, 0);
-      const total = assets - liabilities;
+      const total = assets - Math.abs(liabilities);
       setAssets(assets);
       setLiabilities(liabilities);  
       setTotal(total);
     };
     getAssetsLiabilitiesAndTotal();
   }, [typeCash, typeDebit, typeCredit, typeSavings]);
-
-  // Getting all transactions in the database
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      const { data, error } = await supabase_client
-        .from("transactions")
-        .select("*, categories(category)")
-        .eq("user_id", userId);
-      if (error) {
-        console.log(error)
-        setError(error)
-      } else {
-        // This .select("*, categories(category)") returns all of the columns of the transactions table
-        // and the category column of the categories table as a nested object, so we need to extract the category
-        // to obtain more clean data
-        data.forEach(transaction => {
-          transaction.category = transaction.categories.category;
-          delete transaction.categories;
-        });
-        setTransactionsInDatabase(data);
-        setRefreshTransactions(false);
-      }
-    };
-    fetchTransactions();
-  }, [refreshTransactions]);
 
   // Making sure that the bankStatement is not empty before showing the DefineCategory component
   useEffect(() => {
@@ -380,7 +385,7 @@ const Accounts = ({ userId }) => {
           accountId,
           transaction["Transaction Date"],
           transaction["Transaction Description"],
-          transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
+          transaction["Transaction Type"] === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
           categoriesInDatabase,
           transactionsInDatabase
         ),
@@ -406,27 +411,11 @@ const Accounts = ({ userId }) => {
     }
   }, []);
 
-  const totalBalanceByAccountType = async (accountType) => {
+  const totalBalanceByAccountType = (accountType) => {
     if (accountType.length > 0) {
-      // Get the amount and type of category (expense or income) of each transaction in the account
-      const { data, error } = await supabase_client
-        .from("transactions")
-        .select("amount, categories(category, type), accounts(type)")
-        .eq("user_id", userId);
-      if (error) {
-        console.log(error);
-      } else {
-        const filtered = data.filter(transaction => transaction.accounts.type === accountType[0].type); // Get only the transactions of the account type(cash, credit, debit, or savings)
-        const balanceExpense = filtered.filter(transaction => transaction.categories.type === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
-        const balanceTransferOut = filtered.filter(transaction => transaction.categories.category === "transferOut").reduce((sum, transaction) => sum + transaction.amount, 0);
-        const balanceIncome = filtered.filter(transaction => transaction.categories.type === "income").reduce((sum, transaction) => sum + transaction.amount, 0);
-        const balanceTransferIn = filtered.filter(transaction => transaction.categories.category === "transferIn").reduce((sum, transaction) => sum + transaction.amount, 0);
-        const totalBalance = Math.round(((balanceIncome + balanceTransferIn) - (balanceExpense + balanceTransferOut))*100)/100; // Round to 2 decimal places
-        return totalBalance;    
-      }
-    } else {
-      return 0;
+      return accountType.reduce((sum, account) => sum + account.balance, 0);
     }
+    return 0;
   };
   
   const renderingAccountsByType = () => {
@@ -439,7 +428,7 @@ const Accounts = ({ userId }) => {
       );
     }
     const accountsByType = [typeCash, typeCredit, typeDebit, typeSavings];
-    if (accountsByType.length === 0) {
+    if (accountsByType.every(accountType => accountType[0].length === 0)) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
           No accounts found
@@ -470,7 +459,11 @@ const Accounts = ({ userId }) => {
   }, []);
 
   const updatingAccounts = useCallback((newAccount) => {
-    setAccounts((prevAccounts) => [...prevAccounts, newAccount]);
+    const newAccountWithBalance = {
+      ...newAccount,
+      balance: 0 // Set initial balance to 0 when account is created
+    };
+    setAccounts((prevAccounts) => [...prevAccounts, newAccountWithBalance]);
   }, []);
 
   // If showAddForm is true, render the AddAccount component
@@ -484,7 +477,7 @@ const Accounts = ({ userId }) => {
     );
   }
 
-  // If showDefineCategory is true, render the DefineCategoryAndType component
+  // If showDefineCategory is true, render the DefineCategory component
   if (showDefineCategory) {
     return (
       <DefineCategory

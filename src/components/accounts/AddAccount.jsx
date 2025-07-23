@@ -5,7 +5,6 @@ const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
   const [formData, setFormData] = useState({
     name: "",
     type: "",
-    balance: "0",
     is_active: true,
     user_id: userId,
   });
@@ -28,7 +27,6 @@ const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
     setLoading(true);
 
     try {
-      formData.balance = parseFloat(formData.balance) || 0; //Convert the balance to a number, if the balance is not a number, set it to 0
       const { data: formDataAccount, error } = await supabase_client
         .from("accounts")
         .insert(formData)
@@ -89,21 +87,6 @@ const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
             <option value="debit">Debit</option>
             <option value="credit">Credit</option>
           </select>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label htmlFor="balance" className="text-lg font-semibold">
-            Balance
-          </label>
-          <input
-            type="number"
-            id="balance"
-            name="balance"
-            value={formData.balance}
-            onChange={inputChange}
-            className="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-yellow-500"
-            placeholder="0"
-          />
         </div>
 
         <button
