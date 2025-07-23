@@ -10,6 +10,10 @@ import Papa from "papaparse";
 
 const Accounts = ({ userId }) => {
   const [accounts, setAccounts] = useState([]);
+  const [typeCash, setTypeCash] = useState([[], 0]);
+  const [typeDebit, setTypeDebit] = useState([[], 0]);
+  const [typeCredit, setTypeCredit] = useState([[], 0]);
+  const [typeSavings, setTypeSavings] = useState([[], 0]);
   const [categoriesInDatabase, setCategoriesInDatabase] = useState([]);
   // const [expenseCategories, setExpenseCategories] = useState([]); // This is for the AI prompt
   // const [incomeCategories, setIncomeCategories] = useState([]); // This is for the AI prompt
@@ -20,9 +24,11 @@ const Accounts = ({ userId }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDefineCategory, setShowDefineCategory] = useState(false);
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
+  const [assets, setAssets] = useState(0);
+  const [liabilities, setLiabilities] = useState(0);
+  const [total, setTotal] = useState(0);
 
-  //Getting all accounts from the Accounts table to show in the Accounts component
-  // This useEffect is executed only once when the component is mounted because the array of dependencies is empty
+  // Getting all accounts from the database
   useEffect(() => {
     const fetchAccounts = async () => {
       const { data, error } = await supabase_client
@@ -35,8 +41,8 @@ const Accounts = ({ userId }) => {
         console.log(error);
       } else {
         setAccounts(data);
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchAccounts();
   }, []);
@@ -68,7 +74,40 @@ const Accounts = ({ userId }) => {
       }
     };
     fetchCategories();
-  }, []); 
+  }, []);
+
+  // Getting accounts separated by type and their balances (typeCash, typeDebit, typeCredit, typeSavings) 
+  useEffect(() => {
+    const getAccountsByTypeAndBalances = async () => {
+      const typeCashAccounts = accounts.filter((account) => account.type === "cash");
+      const typeCashBalance = await totalBalanceByAccountType(typeCashAccounts);
+      setTypeCash([typeCashAccounts, typeCashBalance]);
+      const typeDebitAccounts = accounts.filter((account) => account.type === "debit");
+      const typeDebitBalance = await totalBalanceByAccountType(typeDebitAccounts);
+      setTypeDebit([typeDebitAccounts, typeDebitBalance]);
+      const typeCreditAccounts = accounts.filter((account) => account.type === "credit");
+      const typeCreditBalance = await totalBalanceByAccountType(typeCreditAccounts);
+      setTypeCredit([typeCreditAccounts, typeCreditBalance]);
+      const typeSavingsAccounts = accounts.filter((account) => account.type === "savings");
+      const typeSavingsBalance = await totalBalanceByAccountType(typeSavingsAccounts);
+      setTypeSavings([typeSavingsAccounts, typeSavingsBalance]);
+    };
+    getAccountsByTypeAndBalances();
+  }, [accounts]);
+
+  // Getting assets, liabilities, and total
+  useEffect(() => {
+    const getAssetsLiabilitiesAndTotal = () => {
+      const totalBalances = [typeCash[1], typeDebit[1], typeCredit[1], typeSavings[1]];
+      const assets = totalBalances.filter(balance => balance > 0).reduce((sum, balance) => sum + balance, 0);
+      const liabilities = totalBalances.filter(balance => balance < 0).reduce((sum, balance) => sum + balance, 0);
+      const total = assets - liabilities;
+      setAssets(assets);
+      setLiabilities(liabilities);  
+      setTotal(total);
+    };
+    getAssetsLiabilitiesAndTotal();
+  }, [typeCash, typeDebit, typeCredit, typeSavings]);
 
   // Getting all transactions in the database
   useEffect(() => {
@@ -89,7 +128,6 @@ const Accounts = ({ userId }) => {
           delete transaction.categories;
         });
         setTransactionsInDatabase(data);
-        console.log("USEFFECT...transactionsInDatabase++++++++++", data);
         setRefreshTransactions(false);
       }
     };
@@ -103,24 +141,8 @@ const Accounts = ({ userId }) => {
     }
   }, [bankStatement]);
 
-  // Calculations for assets, liabilities, and total
-  const assets = accounts
-    .filter((acc) => acc.balance >= 0)
-    .reduce((sum, acc) => sum + acc.balance, 0);
-  const liabilities =
-    accounts
-      .filter((acc) => acc.balance < 0)
-      .reduce((sum, acc) => sum + acc.balance, 0) * -1;
-  const total = assets - liabilities;
-
-  //Getting props for AccountsbyType
-  const typeCash = accounts.filter((account) => account.type === "cash");
-  const typeDebit = accounts.filter((account) => account.type === "debit");
-  const typeCredit = accounts.filter((account) => account.type === "credit");
-  const typeSavings = accounts.filter((account) => account.type === "savings");
-
   // useCallback is used to prevent the function from being recreated on every render. Especially when the function is passed as a prop to a child component.
-  const processCSV = useCallback((accountId, accountType, file) => {
+  const processCSV = useCallback((accountId, accountType, file, categoriesInDatabase, transactionsInDatabase) => {
     console.log("Processing CSV+++++++++++++++++++++++++++++++++");
     // Parsing the CSV file using Papa Parse library to get the bank statement in an array of objects
     Papa.parse(file, {
@@ -131,11 +153,11 @@ const Accounts = ({ userId }) => {
         // This is temporal only for Capital One Credit and Debit
         // TO-DO: Implement the logic for other banks and account types (Maybe using case-switch)
         if (accountType === "credit") {
-          const formattedBankStatement = await formatingCapitalOneCredit(accountId, results.data);
-          console.log("formattedBankStatement+++++++++++++++++++++++++++++++++", formattedBankStatement);
+          const formattedBankStatement = await formatingCapitalOneCredit(accountId, results.data, categoriesInDatabase, transactionsInDatabase);
           setBankStatement({ accountId, accountType, data: formattedBankStatement });
-        } else if (accountType === "debit") {
-          const formattedBankStatement = formatingCapitalOneDebit(results.data);
+        } 
+        if (accountType === "debit") {
+          const formattedBankStatement = await formatingCapitalOneDebit(accountId, results.data, categoriesInDatabase, transactionsInDatabase);
           setBankStatement({ accountId, accountType, data: formattedBankStatement });
         }
       },
@@ -231,7 +253,8 @@ const Accounts = ({ userId }) => {
   // };
   
 
-  const defineCategory = async (accountId, date, description, amount) => {
+  const defineCategory = async (accountId, date, description, amount, categoriesInDatabase, transactionsInDatabase) => {
+
     // Define if the transaction is a transfer between accounts
     const baseDate = new Date(date);
     const startDateObj = new Date(baseDate);
@@ -257,8 +280,10 @@ const Accounts = ({ userId }) => {
       // in the same period of time, it is very likely to be a transfer between accounts
       transaction.date >= startDate && transaction.date <= endDate && transaction.description === description && transaction.account_id !== accountId;
     });
-    if (transfer.length > 0) {
-      return "transfer";
+    if (transfer.length > 0 && amount > 0) {
+      return "transferIn";
+    } else if (transfer.length > 0 && amount < 0) {
+      return "transferOut";
     } else {
       // Before using the AI, check if in the database there are transactions with the same description
       // in the last 6 months. If there are, use the most common category as a suggested category.
@@ -291,12 +316,13 @@ const Accounts = ({ userId }) => {
           return maxCategory;
       } else {
         console.log("No transactions in range of 6 months, have to use AI+++++++++++++++++++++++++++++++++");
-        return "choose a category"; // This is a temporary solution to avoid using the AI
+        const randomCategory = categoriesInDatabase[Math.floor(Math.random() * categoriesInDatabase.length)].category;
+        return randomCategory; // This is a temporary solution to avoid using the AI
       }
     }
   };
   
-  const formatingCapitalOneCredit= async (accountId, bankStatement) => {
+  const formatingCapitalOneCredit= async (accountId, bankStatement, categoriesInDatabase, transactionsInDatabase) => {
     // Capital One Credit Card bankStatement format:             
     // Card No.: "5678"
     // Category: "Merchandise"
@@ -321,14 +347,16 @@ const Accounts = ({ userId }) => {
           accountId,
           transaction["Posted Date"],
           transaction["Description"],
-          transaction["Debit"] === "" ? transaction["Credit"] : -transaction["Debit"]
+          transaction["Debit"] === "" ? transaction["Credit"] : -transaction["Debit"],
+          categoriesInDatabase,
+          transactionsInDatabase
         ),
       }))
     );
     return formattedBankStatement;
   };
 
-  const formatingCapitalOneDebit= (bankStatement) => {
+  const formatingCapitalOneDebit= async (accountId, bankStatement, categoriesInDatabase, transactionsInDatabase) => {
     // Capital One Debit Card bankStatement format:
     // Account Number: "1234"
     // Balance: "65.79"
@@ -336,12 +364,28 @@ const Accounts = ({ userId }) => {
     // Transaction Date: "07/06/25"
     // Transaction Description: "Debit Card Purchase - SUNTRUST BANK ATLANTA GA"
     // Transaction Type: "Debit"
-    const formattedBankStatement = bankStatement.map(transaction => ({
-      Date: formatDate_YYYY_MM_DD(transaction["Transaction Date"]),
-      Description: transaction["Transaction Description"],
-      Amount: transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
-      Category: defineCategory(formatDate_YYYY_MM_DD(transaction["Transaction Date"]), transaction["Transaction Description"], transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"]),
-    }));
+
+    console.log("formatingCapitalOneDebit+++++++++++++++++++++++++++++++++");
+    // Format the date to YYYY-MM-DD
+    bankStatement.forEach(transaction => {
+      transaction["Transaction Date"] = formatDate_YYYY_MM_DD(transaction["Transaction Date"]);
+    });
+    // Format the bankStatement and get the category for each transaction
+    const formattedBankStatement = await Promise.all(
+      bankStatement.map(async transaction => ({
+        Date: transaction["Transaction Date"],
+        Description: transaction["Transaction Description"],
+        Amount: transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
+        Category: await defineCategory(
+          accountId,
+          transaction["Transaction Date"],
+          transaction["Transaction Description"],
+          transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
+          categoriesInDatabase,
+          transactionsInDatabase
+        ),
+      }))
+    );
     return formattedBankStatement;
   };
 
@@ -362,45 +406,64 @@ const Accounts = ({ userId }) => {
     }
   }, []);
 
-  const beforeRenderingAccounts = () => {
-    if (loading)
+  const totalBalanceByAccountType = async (accountType) => {
+    if (accountType.length > 0) {
+      // Get the amount and type of category (expense or income) of each transaction in the account
+      const { data, error } = await supabase_client
+        .from("transactions")
+        .select("amount, categories(category, type), accounts(type)")
+        .eq("user_id", userId);
+      if (error) {
+        console.log(error);
+      } else {
+        const filtered = data.filter(transaction => transaction.accounts.type === accountType[0].type); // Get only the transactions of the account type(cash, credit, debit, or savings)
+        const balanceExpense = filtered.filter(transaction => transaction.categories.type === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
+        const balanceTransferOut = filtered.filter(transaction => transaction.categories.category === "transferOut").reduce((sum, transaction) => sum + transaction.amount, 0);
+        const balanceIncome = filtered.filter(transaction => transaction.categories.type === "income").reduce((sum, transaction) => sum + transaction.amount, 0);
+        const balanceTransferIn = filtered.filter(transaction => transaction.categories.category === "transferIn").reduce((sum, transaction) => sum + transaction.amount, 0);
+        const totalBalance = Math.round(((balanceIncome + balanceTransferIn) - (balanceExpense + balanceTransferOut))*100)/100; // Round to 2 decimal places
+        return totalBalance;    
+      }
+    } else {
+      return 0;
+    }
+  };
+  
+  const renderingAccountsByType = () => {
+    
+    if (categoriesInDatabase.length === 0) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
-          Loading accounts...
+          Loading ...
         </div>
       );
-    if (error)
-      return (
-        <div className="w-full h-full flex justify-center items-center text-white">
-          Error: {error}
-        </div>
-      );
-    else if (!typeCash && !typeCredit && !typeDebit && !typeSavings) {
+    }
+    const accountsByType = [typeCash, typeCredit, typeDebit, typeSavings];
+    if (accountsByType.length === 0) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
           No accounts found
         </div>
       );
-    }
-  };
-
-  const renderingAccountsByType = (accountType) => {
-    if (accountType.length > 0) {
-      const totalBalance = accountType.reduce(
-        (sum, acc) => sum + acc.balance,
-        0
-      );
-      return (
-        <AccountsByType
-          type={accountType[0].type}
-          totalbalance={totalBalance}
-          accounts={accountType}
-          deleteAccount={deleteAccount}
-          processCSV={processCSV}
-        />
-      );
-    }
-  };
+    } else {
+        return accountsByType.map(accountType => {
+          if (accountType[0].length > 0) {
+            return <AccountsByType
+                      key={accountType[0][0].type}
+                      type={accountType[0][0].type}
+                      totalbalance={accountType[1]}
+                      accounts={accountType[0]}
+                      deleteAccount={deleteAccount}
+                      processCSV={processCSV}
+                      categoriesInDatabase={categoriesInDatabase}
+                      transactionsInDatabase={transactionsInDatabase}
+                    />
+          } else {
+            return null;
+          }
+        });
+      }
+  }
 
   const addAccount = useCallback(() => {
     setShowAddForm(true);
@@ -453,11 +516,7 @@ const Accounts = ({ userId }) => {
         <CategoryAndValue label="Total" value={total} />
       </div>
       <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
-        {beforeRenderingAccounts()}
-        {renderingAccountsByType(typeCash)}
-        {renderingAccountsByType(typeCredit)}
-        {renderingAccountsByType(typeDebit)}
-        {renderingAccountsByType(typeSavings)}
+        {renderingAccountsByType()}
       </div>
     </div>
   );

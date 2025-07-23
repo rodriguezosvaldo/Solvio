@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 
-const SingleAccount = ({ accountId, accountName, accountType, accountBalance, deleteAccount, processCSV }) => {
+const SingleAccount = ({ accountId, accountName, accountType, accountBalance, deleteAccount, processCSV, categoriesInDatabase, transactionsInDatabase }) => {
   const fileInputRef = useRef(null); //native file selector
 
   const csvClick = () => {
@@ -10,7 +10,7 @@ const SingleAccount = ({ accountId, accountName, accountType, accountBalance, de
   const uploadCSV = (event) => {
     const file = event.target.files[0];
     if (file && file.type === "text/csv") {
-      processCSV(accountId, accountType, file);
+      processCSV(accountId, accountType, file, categoriesInDatabase, transactionsInDatabase);
     } else {
       alert("Please select a valid CSV file");
     }

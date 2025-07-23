@@ -4,31 +4,37 @@ import supabase_client from '../../supabase/client';
 
 const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase, transactionsInDatabase, leaveDefineCategory}) => {
 
-    const [categoryValues, setCategoryValues] = useState({});
-
     // Make the keys of the bankStatement object lowercase
     const bankStatementLowerCase = bankStatement.map(transaction => {
-        // Get only categories to show in the select options
+        const newTransaction = {};
         Object.keys(transaction).forEach(key => {
-            transaction[key.toLowerCase()] = transaction[key];
+            newTransaction[key.toLowerCase()] = transaction[key];
         });
-        return transaction;
+        return newTransaction;
     });
 
     // Initialize the categoryValues state with the categories in bankStatement
-    useEffect(() => {
+    const initializeCategoryValues = () => {
         const initialCategories = {};
         bankStatementLowerCase.forEach((transaction, index) => {
             if (transaction.category) {
                 const catInDatabase = categoriesInDatabase.find(cat => cat.category === transaction.category); // Find the category in the database that matches the category in the bank statement. Ex: catInDatabase = {id: 1, category: "Food"}
                 if (catInDatabase) {
-                    initialCategories[index] = catInDatabase.id;
+                    initialCategories[index] = {category_id: catInDatabase.category_id, category: catInDatabase.category};
+                } else {
+                    initialCategories[index] = {category_id: index, category: transaction.category};
                 }
             }
         });
-        console.log("initialCategories++++++++++", initialCategories);
-        setCategoryValues(initialCategories);
+        return initialCategories;
+    }
+
+    const [categoryValues, setCategoryValues] = useState(initializeCategoryValues);
+
+    useEffect(() => {
+        initializeCategoryValues();
     }, []);
+    
 
     const storeCategory = (e, index) => {
         setCategoryValues(prev => ({
@@ -49,25 +55,26 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
         }
     }
 
-
     const saveAllTransactions = () => {
         // Avoid inserting duplicate transactions
-        console.log("CHECKING TO AVOID DUPLICATE TRANSACTIONS...transactionsInDatabase++++++++++", transactionsInDatabase);
         let bankStatementToSave;
+            // Check if transactionsInDatabase is an array and has at least one element
         if (Array.isArray(transactionsInDatabase) && transactionsInDatabase.length > 0) {
-            console.log("There are transactions in the database+++++++++");
             bankStatementToSave = bankStatementLowerCase.filter((transaction) => {
-                // .some() returns true if at least one element in transactionsInDatabase satisfies the condition
-                return transactionsInDatabase.some((transactionInDatabase) => {
-                    transactionInDatabase.user_id === userId &&
-                    transactionInDatabase.account_id === accountId &&
-                    transactionInDatabase.date === transaction.date &&
-                    Number(transactionInDatabase.amount) === Math.abs(Number(transaction.amount)) &&
-                    transactionInDatabase.description === transaction.description
-                })
-            })
+                // .some() returns true if at least one element in transactionsInDatabase satisfies the conditions
+                // meaning that transaction is already in the database, in that case the sign ! is used to return false
+                // so the transaction is not added to bankStatementToSave
+                return !transactionsInDatabase.some((transactionInDatabase) => {
+                    return (
+                        transactionInDatabase.user_id === userId &&
+                        transactionInDatabase.account_id === accountId &&
+                        transactionInDatabase.date === transaction.date &&
+                        Number(transactionInDatabase.amount) === Math.abs(Number(transaction.amount)) &&
+                        transactionInDatabase.description === transaction.description
+                    );
+                });
+            });
         } else {
-            console.log("There are no transactions in the database+++++++++");
             bankStatementToSave = bankStatementLowerCase;
         }
         const transactionsReadyToSave = bankStatementToSave.map((transaction, index) => ({
@@ -75,24 +82,11 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
             account_id: accountId,
             date: transaction.date,
             amount: Math.abs(Number(transaction.amount)),
-            category_id: categoryValues[index],
+            category_id: categoryValues[index].category_id,
             description: transaction.description,
         }));
         insertData(transactionsReadyToSave);
         leaveDefineCategory();
-    }
-
-    
-
-    // TEMPORARY FUNCTION FOR TESTING PURPOSES
-    // Función para asignar categorías aleatorias a cada transacción
-    const handleRandomCategories = () => {
-        const randomCategories = {};
-        bankStatementLowerCase.forEach((_, index) => {
-            const randomIndex = Math.floor(Math.random() * categoriesInDatabase.length);
-            randomCategories[index] = categoriesInDatabase[randomIndex].category_id;
-        });
-        setCategoryValues(randomCategories);
     }
 
     // Counter for the number of columns in the table
@@ -119,7 +113,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
                 <tbody>
                     {/* index is needed to avoid the React warning: Each child in a list should have a unique "key" prop. */}
                     {bankStatementLowerCase.map((transaction, index) => (
-                        // ME KEDE AKI, NECESITO ALMACENAR EN CATEGORYVVALUES TODAS LAS CATEGORIAS
+                        
                         <tr 
                         key={index}
                         className='border-b-1 border-green-500'
@@ -131,7 +125,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
                             <td className='p-2'>
                                 <select
                                 className='bg-white text-black disabled:bg-black'
-                                value={categoryValues[index] ? categoryValues[index] : ''}
+                                value={categoryValues[index].category_id ? categoryValues[index].category_id : ''}
                                 required
                                 onChange={(e) => storeCategory(e, index)}
                                 >
@@ -150,11 +144,6 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
             onClick={saveAllTransactions}
             disabled={Object.keys(categoryValues).length !== bankStatementLowerCase.length}
             >Save All</button>
-            <button
-            className='bg-yellow-400 text-black w-full p-2 rounded-md hover:scale-105 transition-all duration-300 mt-2'
-            type='button'
-            onClick={handleRandomCategories}
-            >Assign random categories</button>
         </div>
     )
 }
