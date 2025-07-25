@@ -12,11 +12,11 @@ const AccountsByType = ({ type, totalbalance, accounts, deleteAccount, processCS
         <div className="flex flex-col w-full gap-4 justify-between items-center p-2">
           {accounts.map((account) => (
             <SingleAccount
-              key={account.id}
-              accountId={account.id}
-              accountName={account.name}
-              accountType={account.type}
-              accountBalance={account.balance}
+              key={account.accountId}
+              accountId={account.accountId}
+              accountName={account.accountName}
+              accountType={account.accountType}
+              accountBalance={account.totalBalance}
               deleteAccount={deleteAccount}
               processCSV={processCSV}
               categoriesInDatabase={categoriesInDatabase}

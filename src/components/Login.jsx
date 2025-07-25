@@ -1,11 +1,13 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { useState } from 'react'
 import supabase_client from '../supabase/client'
+import { SolvioContext } from '../context/SolvioContext'
 
 const Login = () => {
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [email, setEmail] = useState('');
+    const { setRefreshUserId } = useContext(SolvioContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,6 +24,7 @@ const Login = () => {
         }
         setIsSubmitting(false);
         setEmail('');
+        setRefreshUserId(true);
     };
 
 

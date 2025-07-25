@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useContext } from "react";
 import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
 import Accounts from "./components/accounts/Accounts";
 import Stats from "./components/stats/Stats";
-import supabase_client from "./supabase/client";
 import Login from "./components/Login";
+import { SolvioContext } from "./context/SolvioContext";
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
-  const [userId, setUserId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { userId } = useContext(SolvioContext);
 
   const Components = {
     home: Home,
@@ -18,43 +17,16 @@ function App() {
     login: Login,
   };
 
-// Getting the user from the database
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data, error } = await supabase_client.auth.getUser();
-        if (error) {
-          console.log('No user ++++++++++++++');
-          console.log(error);
-          setUserId(null);
-          return;
-        }
-        setUserId(data.user.id);
-      } catch (error) {
-        setUserId(null);
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkUser();
-  }, []); 
-
   const renderComponent = () => {
-    if (loading) {
-      return <div>Loading...</div>;
-    }
-
     if (!userId) {
       return <Login />;
     }
-
     const Component = Components[activeTab];
-    return Component ? <Component userId={userId} /> : <Home />;
+    return Component ? <Component /> : <Home />;
   };
 
   const renderNavbar = () => {
-    if (loading || !userId) {
+    if (!userId) {
       return "";
     } else {
       return <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />;

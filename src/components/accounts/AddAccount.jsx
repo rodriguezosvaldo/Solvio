@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import supabase_client from "../../supabase/client";
 
-const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
+const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
   const [formData, setFormData] = useState({
     name: "",
     type: "",
@@ -37,7 +37,7 @@ const AddAccount = ({ leaveAddAccount, newAccount, userId }) => {
         alert("Error adding account: " + error.message);
       } else {
         console.log("Account added successfully:", formDataAccount[0]);
-        newAccount(formDataAccount[0]); //formDataAccount is an array with an object inside containing the new account data
+        setRefreshAccounts(true);
         leaveAddAccount(); // Return to accounts list
       }
     } catch (error) {

@@ -1,143 +1,21 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import CategoryAndValue from "../home/CategoryAndValue";
 import AccountsByType from "./AccountsByType";
 import AddAccount from "./AddAccount";
 import supabase_client from "../../supabase/client";
 import DefineCategory from "./DefineCategory";
 import Papa from "papaparse";
+import { SolvioContext } from "../../context/SolvioContext";
 
 
-
-const Accounts = ({ userId }) => {
-  const [accounts, setAccounts] = useState([]);
-  const [typeCash, setTypeCash] = useState([[], 0]); // [accounts, balance]
-  const [typeDebit, setTypeDebit] = useState([[], 0]);
-  const [typeCredit, setTypeCredit] = useState([[], 0]);
-  const [typeSavings, setTypeSavings] = useState([[], 0]);
-  const [categoriesInDatabase, setCategoriesInDatabase] = useState([]);
+const Accounts = () => {
   // const [expenseCategories, setExpenseCategories] = useState([]); // This is for the AI prompt
   // const [incomeCategories, setIncomeCategories] = useState([]); // This is for the AI prompt
-  const [transactionsInDatabase, setTransactionsInDatabase] = useState([]);
-  const [refreshTransactions, setRefreshTransactions] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDefineCategory, setShowDefineCategory] = useState(false);
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
-  const [assets, setAssets] = useState(0);
-  const [liabilities, setLiabilities] = useState(0);
-  const [total, setTotal] = useState(0);
+  const { transactionsInDatabase, categoriesInDatabase, userId, setRefreshTransactions, allTotalBalancesByAccount, setRefreshAccounts, assets, liabilities, total } = useContext(SolvioContext);
 
-
-  // Getting all transactions from the database
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      const { data: transactions, error: errorTransactions } = await supabase_client
-        .from("transactions")
-        .select("*, categories(category)")
-        .eq("user_id", userId);
-      if (errorTransactions) {
-        console.log(errorTransactions);
-      } else {
-        transactions.forEach(transaction => {
-          transaction.category = transaction.categories.category;
-          delete transaction.categories;
-        });
-        setTransactionsInDatabase(transactions);
-      }
-    };
-    fetchTransactions();
-    setRefreshTransactions(false);
-  }, [refreshTransactions]);
-
-  // Getting all accounts from the database
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      const { data: accounts, error: errorAccounts } = await supabase_client
-        .from("accounts")
-        .select("*")
-        .eq("is_active", true)
-        .eq("user_id", userId);
-      if (errorAccounts) {
-        console.log(errorAccounts);
-      } else {
-        const accountsData = accounts.map(account => {
-          const accountTransactions = transactionsInDatabase.filter(transaction => transaction.account_id === account.id);
-          const expenseBalances = accountTransactions.filter(transaction => transaction.category === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
-          const transferOutBalances = accountTransactions.filter(transaction => transaction.category === "transferOut").reduce((sum, transaction) => sum + transaction.amount, 0);
-          const incomeBalances = accountTransactions.filter(transaction => transaction.category === "income").reduce((sum, transaction) => sum + transaction.amount, 0); 
-          const transferInBalances = accountTransactions.filter(transaction => transaction.category === "transferIn").reduce((sum, transaction) => sum + transaction.amount, 0);
-          const accountBalance = Math.round(((incomeBalances + transferInBalances) - (expenseBalances + transferOutBalances))*100)/100;
-          return {
-            ...account,
-            balance: accountBalance
-          }
-        });
-        setAccounts(accountsData);
-      }
-    };
-    fetchAccounts();
-  }, [transactionsInDatabase]); // This is to make sure that the accounts balances are updated when the transactions are updated
-
-  // Getting all categories from the database
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase_client
-        .from("categories")
-        .select("id, category, type");
-      if (error) {
-        console.log(error);
-      } else {
-        // Make a list of categories to show in the AI prompt. Example: "Groceries"
-        // This is a good way to show the data to the AI in a more readable format
-        const categories = {expense: [], income: [] };
-        const arrayCategoriesInDatabase = [];
-        data.map(categoryAndType => {
-          arrayCategoriesInDatabase.push({category_id: categoryAndType.id, category: categoryAndType.category});
-          if (categoryAndType.type === "expense") {
-            categories.expense.push(categoryAndType.category);
-          } else {
-            categories.income.push(categoryAndType.category);
-          }
-        });
-        // setExpenseCategories(categories.expense.join(", ")); // It is a better format for the AI prompt
-        // setIncomeCategories(categories.income.join(", ")); // It is a better format for the AI prompt
-        setCategoriesInDatabase(arrayCategoriesInDatabase); 
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  // Getting accounts separated by type and their balances (typeCash, typeDebit, typeCredit, typeSavings) 
-  useEffect(() => {
-    const getAccountsByTypeAndBalances = () => {
-      const typeCashAccounts = accounts.filter((account) => account.type === "cash");
-      const typeCashBalance = totalBalanceByAccountType(typeCashAccounts);
-      setTypeCash([typeCashAccounts, typeCashBalance]);
-      const typeDebitAccounts = accounts.filter((account) => account.type === "debit");
-      const typeDebitBalance = totalBalanceByAccountType(typeDebitAccounts);
-      setTypeDebit([typeDebitAccounts, typeDebitBalance]);
-      const typeCreditAccounts = accounts.filter((account) => account.type === "credit");
-      const typeCreditBalance = totalBalanceByAccountType(typeCreditAccounts);
-      setTypeCredit([typeCreditAccounts, typeCreditBalance]);
-      const typeSavingsAccounts = accounts.filter((account) => account.type === "savings");
-      const typeSavingsBalance = totalBalanceByAccountType(typeSavingsAccounts);
-      setTypeSavings([typeSavingsAccounts, typeSavingsBalance]);
-    };
-    getAccountsByTypeAndBalances();
-  }, [accounts]);
-
-  // Getting assets, liabilities, and total
-  useEffect(() => {
-    const getAssetsLiabilitiesAndTotal = () => {
-      const totalBalances = [typeCash[1], typeDebit[1], typeCredit[1], typeSavings[1]];
-      const assets = totalBalances.filter(balance => balance > 0).reduce((sum, balance) => sum + balance, 0);
-      const liabilities = totalBalances.filter(balance => balance < 0).reduce((sum, balance) => sum + balance, 0);
-      const total = assets - Math.abs(liabilities);
-      setAssets(assets);
-      setLiabilities(liabilities);  
-      setTotal(total);
-    };
-    getAssetsLiabilitiesAndTotal();
-  }, [typeCash, typeDebit, typeCredit, typeSavings]);
 
   // Making sure that the bankStatement is not empty before showing the DefineCategory component
   useEffect(() => {
@@ -321,6 +199,7 @@ const Accounts = ({ userId }) => {
           return maxCategory;
       } else {
         console.log("No transactions in range of 6 months, have to use AI+++++++++++++++++++++++++++++++++");
+        console.log("categoriesInDatabase+++++++++++++++++++++++++++++++++", categoriesInDatabase);
         const randomCategory = categoriesInDatabase[Math.floor(Math.random() * categoriesInDatabase.length)].category;
         return randomCategory; // This is a temporary solution to avoid using the AI
       }
@@ -407,63 +286,44 @@ const Accounts = ({ userId }) => {
     if (error) {
       console.log(error);
     } else {
-      setAccounts(prevAccounts => prevAccounts.filter((account) => account.id !== accountId));
+      setRefreshAccounts(true);
     }
   }, []);
 
-  const totalBalanceByAccountType = (accountType) => {
-    if (accountType.length > 0) {
-      return accountType.reduce((sum, account) => sum + account.balance, 0);
-    }
-    return 0;
-  };
-  
   const renderingAccountsByType = () => {
-    
-    if (categoriesInDatabase.length === 0) {
-      return (
-        <div className="w-full h-full flex justify-center items-center text-white">
-          Loading ...
-        </div>
-      );
-    }
-    const accountsByType = [typeCash, typeCredit, typeDebit, typeSavings];
-    if (accountsByType.every(accountType => accountType[0].length === 0)) {
+    console.log("allTotalBalancesByAccount+++++++++++++++++++++++++++++++++", allTotalBalancesByAccount);
+    if (allTotalBalancesByAccount.length === 0) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
           No accounts found
         </div>
       );
     } else {
-        return accountsByType.map(accountType => {
-          if (accountType[0].length > 0) {
-            return <AccountsByType
-                      key={accountType[0][0].type}
-                      type={accountType[0][0].type}
-                      totalbalance={accountType[1]}
-                      accounts={accountType[0]}
-                      deleteAccount={deleteAccount}
-                      processCSV={processCSV}
-                      categoriesInDatabase={categoriesInDatabase}
-                      transactionsInDatabase={transactionsInDatabase}
-                    />
-          } else {
-            return null;
-          }
-        });
-      }
+      const typeCash = allTotalBalancesByAccount.filter(account => account.accountType === "cash");
+      const typeDebit = allTotalBalancesByAccount.filter(account => account.accountType === "debit");
+      const typeCredit = allTotalBalancesByAccount.filter(account => account.accountType === "credit");
+      const typeSavings = allTotalBalancesByAccount.filter(account => account.accountType === "savings");
+      const accountsByType = [typeCash, typeDebit, typeCredit, typeSavings];
+      return accountsByType.map(accountType => {
+        if (accountType.length > 0) {
+          const totalBalance = accountType.map(account => account.totalBalance).reduce((sum, balance) => sum + balance, 0);
+          return <AccountsByType
+                    key={accountType[0].accountId}
+                    type={accountType[0].accountType}
+                    totalbalance={totalBalance}
+                    accounts={accountType}
+                    deleteAccount={deleteAccount}
+                    processCSV={processCSV}
+                    categoriesInDatabase={categoriesInDatabase}
+                    transactionsInDatabase={transactionsInDatabase}
+                  />
+        }
+      });
+    }
   }
 
   const addAccount = useCallback(() => {
     setShowAddForm(true);
-  }, []);
-
-  const updatingAccounts = useCallback((newAccount) => {
-    const newAccountWithBalance = {
-      ...newAccount,
-      balance: 0 // Set initial balance to 0 when account is created
-    };
-    setAccounts((prevAccounts) => [...prevAccounts, newAccountWithBalance]);
   }, []);
 
   // If showAddForm is true, render the AddAccount component
@@ -471,8 +331,8 @@ const Accounts = ({ userId }) => {
     return (
       <AddAccount
         leaveAddAccount={() => setShowAddForm(false)}
-        newAccount={updatingAccounts}
         userId={userId}
+        setRefreshAccounts={setRefreshAccounts}
       />
     );
   }
@@ -505,8 +365,8 @@ const Accounts = ({ userId }) => {
       </button>
       <div className="flex gap-2 w-full justify-around items-center">
         <CategoryAndValue label="Assets" value={assets} />
-        <CategoryAndValue label="Liabilities" value={liabilities} />
-        <CategoryAndValue label="Total" value={total} />
+        <CategoryAndValue label="Liabilities" value={liabilities}/>
+        <CategoryAndValue label="Total" value={total}/>
       </div>
       <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
         {renderingAccountsByType()}
