@@ -2,7 +2,6 @@ import { useState, useContext } from "react";
 import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
 import Accounts from "./components/accounts/Accounts";
-import Stats from "./components/stats/Stats";
 import Login from "./components/Login";
 import { SolvioContext } from "./context/SolvioContext";
 
@@ -13,7 +12,6 @@ function App() {
   const Components = {
     home: Home,
     accounts: Accounts,
-    stats: Stats,
     login: Login,
   };
 

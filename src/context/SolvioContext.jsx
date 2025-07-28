@@ -5,13 +5,17 @@ import Login from "../components/Login";
 const SolvioContext = createContext();
 
 const SolvioProvider = ({ children }) => {
-    const [assets, setAssets] = useState(0);
-    const [liabilities, setLiabilities] = useState(0);
-    const [total, setTotal] = useState(0);
+    const [assetsLastMonthInDatabase, setAssetsLastMonthInDatabase] = useState(0);
+    const [liabilitiesLastMonthInDatabase, setLiabilitiesLastMonthInDatabase] = useState(0);
+    const [totalLastMonthInDatabase, setTotalLastMonthInDatabase] = useState(0);
+    const [assetsPreviousMonth, setAssetsPreviousMonth] = useState(0);
+    const [liabilitiesPreviousMonth, setLiabilitiesPreviousMonth] = useState(0);
+    const [totalPreviousMonth, setTotalPreviousMonth] = useState(0);
     const [transactionsInDatabase, setTransactionsInDatabase] = useState([]);
     const [categoriesInDatabase, setCategoriesInDatabase] = useState([]);
     const [refreshTransactions, setRefreshTransactions] = useState(true);
-    const [allTotalBalancesByAccount, setAllTotalBalancesByAccount] = useState([]); // List of all accounts with their id, type and total balance
+    const [allTotalBalancesByAccountLastMonthInDatabase, setAllTotalBalancesByAccountLastMonthInDatabase] = useState([]); // List of all accounts with their id, type and total balance from all transactions until the last month registered in the database
+    const [allTotalBalancesByAccountPreviousMonth, setAllTotalBalancesByAccountPreviousMonth] = useState([]); // List of all accounts with their id, type and total balance from all transactions until the previous month registered in the database
     const [refreshAccounts, setRefreshAccounts] = useState(true);
     const [userId, setUserId] = useState(null);
     const [refreshUserId, setRefreshUserId] = useState(true);
@@ -58,7 +62,7 @@ const SolvioProvider = ({ children }) => {
                 const categories = {expense: [], income: [] };
                 const arrayCategoriesInDatabase = [];
                 data.map(categoryAndType => {
-                arrayCategoriesInDatabase.push({category_id: categoryAndType.id, category: categoryAndType.category});
+                arrayCategoriesInDatabase.push({category_id: categoryAndType.id, category: categoryAndType.category, categoryType: categoryAndType.type});
                 if (categoryAndType.type === "expense") {
                     categories.expense.push(categoryAndType.category);
                 } else {
@@ -131,13 +135,26 @@ const SolvioProvider = ({ children }) => {
                 const allTransactionsNotTransfer = transactionsInDatabase.filter(transaction => {
                     return transaction.category !== "transferOut" && transaction.category !== "transferIn";
                 });  
-                const allTotalBalancesByAccount = accountIdsAndTypes.map(account=> {
-                    const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "income").reduce((sum, transaction) => sum + transaction.amount, 0);
-                    const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "expense").reduce((sum, transaction) => sum + transaction.amount, 0);
+                const transactionsInDatabaseDates = allTransactionsNotTransfer.map(transaction => transaction.date);
+                const lastDateInDatabase = transactionsInDatabaseDates.sort((a, b)=> new Date(a) - new Date(b))[transactionsInDatabaseDates.length - 1]; // Get the last date in the database
+                const lastDateInDatabaseObj = new Date(lastDateInDatabase); // Convert string to Date object to be able to use the getFullYear, getMonth and getDate methods to calculate the previous month
+                const previousMonthDateObj = new Date(lastDateInDatabaseObj.getFullYear(), lastDateInDatabaseObj.getMonth() - 1, lastDateInDatabaseObj.getDate()); // Get the date of the previous month
+                const previousMonthDate = previousMonthDateObj.toISOString().split('T')[0]; // Convert Date object to string in the format YYYY-MM-DD
+
+                const allTotalBalancesByAccountLastMonthInDatabase = accountIdsAndTypes.map(account=> {
+                    const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "income" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
+                    const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "expense" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
                     const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
                     return {accountId: account.account_id, accountType: account.accountType, accountName: account.accountName, totalBalance: totalBalanceByAccount};
                 });
-                setAllTotalBalancesByAccount(allTotalBalancesByAccount);
+                const allTotalBalancesByAccountPreviousMonth = accountIdsAndTypes.map(account=> {
+                    const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "income" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
+                    const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "expense" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
+                    const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
+                    return {accountId: account.account_id, accountType: account.accountType, accountName: account.accountName, totalBalance: totalBalanceByAccount};
+                });
+                setAllTotalBalancesByAccountLastMonthInDatabase(allTotalBalancesByAccountLastMonthInDatabase);
+                setAllTotalBalancesByAccountPreviousMonth(allTotalBalancesByAccountPreviousMonth);
                 setRefreshAccounts(false);
             }
         }
@@ -156,30 +173,44 @@ const SolvioProvider = ({ children }) => {
                 setTotal(0);
                 return;
             }
-                      
-            // Get assets, liabilities and total
-            const positiveBalances = allTotalBalancesByAccount.filter(account => account.totalBalance >= 0);
-            const negativeBalances = allTotalBalancesByAccount.filter(account => account.totalBalance < 0);
-            const assets = Math.round(positiveBalances.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
-            const liabilities = Math.round(negativeBalances.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
-            const absoluteLiabilities = Math.abs(liabilities);
-            const total = assets - absoluteLiabilities;
-            setAssets(assets);
-            setLiabilities(liabilities);  
-            setTotal(total);
+
+            // Get assets, liabilities and total of the last month in the database
+            const positiveBalancesLastMonth = allTotalBalancesByAccountLastMonthInDatabase.filter(account => account.totalBalance >= 0);
+            const negativeBalancesLastMonth = allTotalBalancesByAccountLastMonthInDatabase.filter(account => account.totalBalance < 0);
+            const assetsLastMonth = Math.round(positiveBalancesLastMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
+            const liabilitiesLastMonth = Math.round(negativeBalancesLastMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
+            const absoluteLiabilitiesLastMonth = Math.abs(liabilitiesLastMonth);
+            const totalLastMonth = assetsLastMonth - absoluteLiabilitiesLastMonth;
+            setAssetsLastMonthInDatabase(assetsLastMonth);
+            setLiabilitiesLastMonthInDatabase(liabilitiesLastMonth);  
+            setTotalLastMonthInDatabase(totalLastMonth);
+
+            // Get assets, liabilities and total of the previous month in the database
+            const positiveBalancesPreviousMonth = allTotalBalancesByAccountPreviousMonth.filter(account => account.totalBalance >= 0);
+            const negativeBalancesPreviousMonth = allTotalBalancesByAccountPreviousMonth.filter(account => account.totalBalance < 0);
+            const assetsPreviousMonth = Math.round(positiveBalancesPreviousMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
+            const liabilitiesPreviousMonth = Math.round(negativeBalancesPreviousMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
+            const absoluteLiabilitiesPreviousMonth = Math.abs(liabilitiesPreviousMonth);
+            const totalPreviousMonth = assetsPreviousMonth - absoluteLiabilitiesPreviousMonth;
+            setAssetsPreviousMonth(assetsPreviousMonth);
+            setLiabilitiesPreviousMonth(liabilitiesPreviousMonth);
+            setTotalPreviousMonth(totalPreviousMonth);
         };
         getAssetsLiabilitiesAndTotal();
-    }, [allTotalBalancesByAccount]);
+    }, [allTotalBalancesByAccountLastMonthInDatabase]);
 
     return (
         loading ? <div>Cargando...</div> : !userId ? <Login /> :
         <SolvioContext.Provider value={{
-        assets,
-        liabilities,
-        total,
+        assetsLastMonthInDatabase,
+        liabilitiesLastMonthInDatabase,
+        totalLastMonthInDatabase,
+        assetsPreviousMonth,
+        liabilitiesPreviousMonth,
+        totalPreviousMonth,
         transactionsInDatabase, setTransactionsInDatabase,
         categoriesInDatabase, setCategoriesInDatabase,
-        allTotalBalancesByAccount, setRefreshAccounts,
+        allTotalBalancesByAccountLastMonthInDatabase, setRefreshAccounts,
         setRefreshTransactions,
         userId,
         setRefreshUserId

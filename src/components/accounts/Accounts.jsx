@@ -291,7 +291,6 @@ const Accounts = () => {
   }, []);
 
   const renderingAccountsByType = () => {
-    console.log("allTotalBalancesByAccount+++++++++++++++++++++++++++++++++", allTotalBalancesByAccount);
     if (allTotalBalancesByAccount.length === 0) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">

@@ -1,7 +1,5 @@
 import React from 'react';
 import NavbarBtn from './NavbarBtn';
-import WBtn from './WBtn';
-
 
 //Add the breackpoints later md:flex-col md:gap-8 md:w-fit
 const Navbar = ({ activeTab='home', setActiveTab }) => (
@@ -15,14 +13,6 @@ const Navbar = ({ activeTab='home', setActiveTab }) => (
       label="Accounts"
       onClick={() => setActiveTab('accounts')}
       isActive={activeTab === 'accounts'}
-    />
-    <NavbarBtn
-      label="Stats"
-      onClick={() => setActiveTab('stats')}
-      isActive={activeTab === 'stats'}
-    />
-    <WBtn
-      onClick={() => setActiveTab('w-btn')}
     />
   </nav>
 );
