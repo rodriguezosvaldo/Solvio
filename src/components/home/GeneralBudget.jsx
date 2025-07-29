@@ -41,6 +41,7 @@ const GeneralBudget = () => {
     
     return (
         <div className='grid grid-cols-2 grid-rows-3 gap-4 border border-white/60 rounded-3xl p-4 w-full h-full'>
+            
             <div className='flex items-center justify-center'>
                 <CategoryAndValue label='Assets' value={assetsLastMonthInDatabase} />
             </div>
@@ -50,6 +51,7 @@ const GeneralBudget = () => {
                 popUpMessage={popUpMessageAssets}
                 />
             </div>
+
             <div className='flex items-center justify-center'>
                 <CategoryAndValue label='Liabilities' value={liabilitiesLastMonthInDatabase} />
             </div>
@@ -59,6 +61,7 @@ const GeneralBudget = () => {
                 popUpMessage={popUpMessageLiabilities}
                 />
             </div>
+
             <div className='flex items-center justify-center'>
                 <CategoryAndValue label='Total' value={totalLastMonthInDatabase} />
             </div>
@@ -68,6 +71,7 @@ const GeneralBudget = () => {
                 popUpMessage={popUpMessageTotal}
                 />
             </div>
+            
         </div>
     )
 };

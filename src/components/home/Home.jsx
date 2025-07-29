@@ -1,8 +1,8 @@
 import React from 'react'
 import GeneralBudget from './GeneralBudget'
-import ExpenseCategoryPieChart from './ExpenseCategoryPieChart'
 import MainCategories from './MainCategories'
 import IncomeExpenseCharts from './IncomeExpenseCharts'
+import CategoriesPieChart from './CategoriesPieChart'
 
 
 
@@ -13,7 +13,7 @@ const Home = () => {
                 <GeneralBudget/>
             </div>
             <div className='col-span-1 row-span-1'>
-                <ExpenseCategoryPieChart />
+                <CategoriesPieChart />
             </div>
             <div className='col-span-1 row-span-3'>
                 <MainCategories />

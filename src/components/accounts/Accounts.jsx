@@ -14,7 +14,7 @@ const Accounts = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDefineCategory, setShowDefineCategory] = useState(false);
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
-  const { transactionsInDatabase, categoriesInDatabase, userId, setRefreshTransactions, allTotalBalancesByAccount, setRefreshAccounts, assets, liabilities, total } = useContext(SolvioContext);
+  const { transactionsInDatabase, categoriesInDatabase, userId, setRefreshTransactions, balanceByAccountLastMonthInDatabase, setRefreshAccounts, assetsLastMonthInDatabase, liabilitiesLastMonthInDatabase, totalLastMonthInDatabase } = useContext(SolvioContext);
 
 
   // Making sure that the bankStatement is not empty before showing the DefineCategory component
@@ -291,21 +291,22 @@ const Accounts = () => {
   }, []);
 
   const renderingAccountsByType = () => {
-    if (allTotalBalancesByAccount.length === 0) {
+    if (balanceByAccountLastMonthInDatabase.length === 0) {
       return (
         <div className="w-full h-full flex justify-center items-center text-white">
           No accounts found
         </div>
       );
     } else {
-      const typeCash = allTotalBalancesByAccount.filter(account => account.accountType === "cash");
-      const typeDebit = allTotalBalancesByAccount.filter(account => account.accountType === "debit");
-      const typeCredit = allTotalBalancesByAccount.filter(account => account.accountType === "credit");
-      const typeSavings = allTotalBalancesByAccount.filter(account => account.accountType === "savings");
+      const typeCash = balanceByAccountLastMonthInDatabase.filter(account => account.accountType === "cash");
+      const typeDebit = balanceByAccountLastMonthInDatabase.filter(account => account.accountType === "debit");
+      const typeCredit = balanceByAccountLastMonthInDatabase.filter(account => account.accountType === "credit");
+      const typeSavings = balanceByAccountLastMonthInDatabase.filter(account => account.accountType === "savings");
       const accountsByType = [typeCash, typeDebit, typeCredit, typeSavings];
       return accountsByType.map(accountType => {
         if (accountType.length > 0) {
-          const totalBalance = accountType.map(account => account.totalBalance).reduce((sum, balance) => sum + balance, 0);
+          // Get the total balance of the account type (Sum of all balances of the accounts with the same type)
+          const totalBalance = accountType.map(account => account.totalBalance).reduce((sum, balance) => sum + balance, 0); 
           return <AccountsByType
                     key={accountType[0].accountId}
                     type={accountType[0].accountType}
@@ -363,9 +364,9 @@ const Accounts = () => {
         +
       </button>
       <div className="flex gap-2 w-full justify-around items-center">
-        <CategoryAndValue label="Assets" value={assets} />
-        <CategoryAndValue label="Liabilities" value={liabilities}/>
-        <CategoryAndValue label="Total" value={total}/>
+        <CategoryAndValue label="Assets" value={assetsLastMonthInDatabase} />
+        <CategoryAndValue label="Liabilities" value={liabilitiesLastMonthInDatabase}/>
+        <CategoryAndValue label="Total" value={totalLastMonthInDatabase}/>
       </div>
       <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
         {renderingAccountsByType()}
