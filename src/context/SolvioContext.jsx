@@ -17,12 +17,13 @@ const SolvioProvider = ({ children }) => {
     const [categoriesInDatabase, setCategoriesInDatabase] = useState([]); // []
     
     const [allTransactionsNotTransfer, setAllTransactionsNotTransfer] = useState([]); // []
-    const [lastDateInDatabase, setLastDateInDatabase] = useState(null); // []
-    const [previousMonthDate, setPreviousMonthDate] = useState(null); // []
-    const [balanceByCategoryLastDateInDatabase, setBalanceByCategoryLastDateInDatabase] = useState([]); // [MainCategories, PieChart]
+    const [lastDateInDatabase, setLastDateInDatabase] = useState(null); // [useEffect (Getting all accounts with their id, type and total balance)]
+    const [previousMonthDate, setPreviousMonthDate] = useState(null); // [useEffect (Getting all accounts with their id, type and total balance)]
+    const [balanceByCatLastAndPreviousDate, setBalanceByCatLastAndPreviousDate] = useState([]); // [MainCategories, PieChart]
+    const [totalExpenseAndIncomeByMonth, setTotalExpenseAndIncomeByMonth] = useState([]); // [IncomeExpenseChart.jsx]
     
     const [balanceByAccountLastMonthInDatabase, setBalanceByAccountLastMonthInDatabase] = useState([]); // []. List of all accounts with their id, type and total balance from all transactions until the last month registered in the database
-    const [balanceByAccountPreviousMonth, setBalanceByAccountPreviousMonth] = useState([]); // []. List of all accounts with their id, type and total balance from all transactions until the previous month registered in the database, useful for the trend arrow
+    const [balanceByAccountPreviousMonth, setBalanceByAccountPreviousMonth] = useState([]); // []. List of all accounts with their id, type and total balance from all transactions until the previous month registered in the database, useful to get assets,liabilities, and total, and compare with last month for the trend arrow
     const [refreshAccounts, setRefreshAccounts] = useState(true); // [, ]
     
     const [userId, setUserId] = useState(null); // [, ]
@@ -110,99 +111,46 @@ const SolvioProvider = ({ children }) => {
         setRefreshTransactions(false);
     }, [refreshTransactions, userId]);
 
-    // Get all transactions excluding transferOut and transferIn because they are not assets or liabilities, only money moved between accounts
-    // Get the last date in the database and the previous month date
+    // Getting the last date in DB and previous month, also getting balance of each category on those dates
     useEffect(() => {
-        if (transactionsInDatabase.length > 0) {
+        if (transactionsInDatabase.length > 0 && categoriesInDatabase.length > 0) {
+            // Get all transactions excluding transferOut and transferIn because they are not assets or liabilities, only money moved between accounts
             const allTransactionsNotTransfer = transactionsInDatabase.filter(transaction => {
                 return transaction.category !== "transferOut" && transaction.category !== "transferIn";
             });  
+
+            // Get the last date in the database and the previous month date
             const transactionsInDatabaseDates = allTransactionsNotTransfer.map(transaction => transaction.date);
             const lastDateInDatabase = transactionsInDatabaseDates.sort((a, b)=> new Date(a) - new Date(b))[transactionsInDatabaseDates.length - 1]; // Get the last date in the database
             const lastDateInDatabaseObj = new Date(lastDateInDatabase); // Convert string to Date object to be able to use the getFullYear, getMonth and getDate methods to calculate the previous month
             const previousMonthDateObj = new Date(lastDateInDatabaseObj.getFullYear(), lastDateInDatabaseObj.getMonth() - 1, lastDateInDatabaseObj.getDate()); // Get the date of the previous month
             const previousMonthDate = previousMonthDateObj.toISOString().split('T')[0]; // Convert Date object to string in the format YYYY-MM-DD
-            setLastDateInDatabase(lastDateInDatabase);
-            setPreviousMonthDate(previousMonthDate);
-            setAllTransactionsNotTransfer(allTransactionsNotTransfer);
-        }
-    }, [transactionsInDatabase]);
 
-    // Getting all accounts with their id, type and total balance
-    useEffect(() => {
-        if (!userId) {
-            return;
-        }
-        const fetchAccountIds = async () => {
-            const { data, error } = await supabase_client
-                .from("transactions")
-                .select("account_id, accounts(name, type)")
-                .eq("user_id", userId);
-            if (error) {
-                console.log(error);
-            } else {
-                data.forEach(account => {
-                    account.name = account.accounts.name;
-                    account.type = account.accounts.type;
-                    delete account.accounts;
-                });
-                const accountIds = data.map(account => account.account_id);
-                const accountTypes = data.map(account => account.type);
-                const accountNames = data.map(account => account.name);
-                const setAccountIds = [...new Set(accountIds)]; // Remove duplicates (before was like: [1, 1, 2, 3, 3, 4, 4, 4, 5] now is like: [1, 2, 3, 4, 5])
-                const setAccountTypes = [...new Set(accountTypes)];
-                const setAccountNames = [...new Set(accountNames)];
-                const accountIdsAndTypes = [];
-                for (let i = 0; i < setAccountIds.length; i++) {
-                    accountIdsAndTypes.push({account_id: setAccountIds[i], accountType: setAccountTypes[i], accountName: setAccountNames[i]});
-                }
-                const balanceByAccountLastMonthInDatabase = accountIdsAndTypes.map(account=> {
-                    const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "income" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
-                    const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "expense" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
-                    const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
-                    return {accountId: account.account_id, 
-                        accountType: account.accountType, 
-                        accountName: account.accountName, 
-                        totalBalance: totalBalanceByAccount};
-                });
-                const balanceByAccountPreviousMonth = accountIdsAndTypes.map(account=> {
-                    const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "income" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
-                    const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.account_id && transaction.type === "expense" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
-                    const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
-                    return {accountId: account.account_id, 
-                        accountType: account.accountType, 
-                        accountName: account.accountName, 
-                        totalBalance: totalBalanceByAccount};
-                });
-                setBalanceByAccountLastMonthInDatabase(balanceByAccountLastMonthInDatabase);
-                setBalanceByAccountPreviousMonth(balanceByAccountPreviousMonth);
-                setRefreshAccounts(false);
-            }
-        }
-        fetchAccountIds();
-    }, [transactionsInDatabase, refreshAccounts]);
-
-    // Getting the balance of each category in the last date and the previous month registered in the database. Useful to compare both balances and show the trend arrow
-    useEffect(() => {
-        if (transactionsInDatabase.length > 0 && categoriesInDatabase.length > 0) {
-            const categoriesNotTransfer = categoriesInDatabase.filter(category => category.categoryType !== "transfer"); 
-            const transactionsNotTransfer = transactionsInDatabase.filter(transaction => transaction.type !== "transfer");
-            const transactionsInDatabaseDates = transactionsNotTransfer.map(transaction => transaction.date);
-            const lastDateInDatabase = transactionsInDatabaseDates.sort((a, b)=> new Date(a) - new Date(b))[transactionsInDatabaseDates.length - 1]; // Get the last date in the database
-            const lastDateInDatabaseObj = new Date(lastDateInDatabase); // Convert string to Date object to be able to use the getFullYear, getMonth and getDate methods to calculate the previous month
-            const previousMonthDateObj = new Date(lastDateInDatabaseObj.getFullYear(), lastDateInDatabaseObj.getMonth() - 1, lastDateInDatabaseObj.getDate()); // Get the date of the previous month
-            const previousMonthDate = previousMonthDateObj.toISOString().split('T')[0]; // Convert Date object to string in the format YYYY-MM-DD
-
+            // Getting the balance of each category in the last date and the previous month registered in the database. Useful to compare both balances and show the trend arrow
+            const categoriesNotTransfer = categoriesInDatabase.filter(category => category.category !== "transferOut" && category.category !== "transferIn");
+            
+            // Get first day of last month in database and first day of previous month
+            const firstDayLastMonth = new Date(lastDateInDatabaseObj.getFullYear(), lastDateInDatabaseObj.getMonth(), 1).toISOString().split('T')[0];
+            const firstDayPreviousMonth = new Date(previousMonthDateObj.getFullYear(), previousMonthDateObj.getMonth(), 1).toISOString().split('T')[0];
+            
             const balancesByCategory = categoriesNotTransfer.map(category => {
                 let lastMonthInDatabaseBalance = 0;
                 let previousMonthBalance = 0;
-                if (category.categoryType === "expense") {
-                    lastMonthInDatabaseBalance = Math.round(transactionsInDatabase.filter(transaction => transaction.category_id === category.category_id && transaction.type === "expense" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
-                    previousMonthBalance = Math.round(transactionsInDatabase.filter(transaction => transaction.category_id === category.category_id && transaction.type === "expense" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
-                } else {
-                    lastMonthInDatabaseBalance = Math.round(transactionsInDatabase.filter(transaction => transaction.category_id === category.category_id && transaction.type === "income" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
-                    previousMonthBalance = Math.round(transactionsInDatabase.filter(transaction => transaction.category_id === category.category_id && transaction.type === "income" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
-                }
+
+                lastMonthInDatabaseBalance = Math.round(allTransactionsNotTransfer
+                    .filter(transaction => 
+                    transaction.category_id === category.category_id &&  
+                    transaction.date >= firstDayLastMonth && 
+                    transaction.date <= lastDateInDatabase)
+                    .reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
+
+                previousMonthBalance = Math.round(allTransactionsNotTransfer
+                    .filter(transaction => 
+                    transaction.category_id === category.category_id && 
+                    transaction.date >= firstDayPreviousMonth && 
+                    transaction.date <= previousMonthDate)
+                    .reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
+                
                 const difference = Math.round((lastMonthInDatabaseBalance - previousMonthBalance)*100)/100;
                 return {
                     categoryId: category.category_id,
@@ -219,13 +167,86 @@ const SolvioProvider = ({ children }) => {
             const onlyIncome = balancesByCategory.filter(cat => cat.categoryType === "income");
             const allCategories = [...onlyExpense, ...onlyIncome];
             // Add color to each category
-            const balanceByCategoryLastDateInDatabase = allCategories.map((category, index) => ({
+            const balanceByCatLastAndPreviousDate = allCategories.map((category, index) => ({
                 ...category,
                 fill: colors[index]
             }));
-            setBalanceByCategoryLastDateInDatabase(balanceByCategoryLastDateInDatabase);
+            setBalanceByCatLastAndPreviousDate(balanceByCatLastAndPreviousDate);
+            setLastDateInDatabase(lastDateInDatabase);
+            setPreviousMonthDate(previousMonthDate); // used in useEffect (Getting all accounts with their id, type and total balance)
+            setAllTransactionsNotTransfer(allTransactionsNotTransfer); // used in useEffect (Getting all accounts with their id, type and total balance)
         }
-    }, [transactionsInDatabase, categoriesInDatabase]);
+    }, [transactionsInDatabase]);   
+
+    // Getting total expense and income by month
+    useEffect(() => {
+        if (lastDateInDatabase && allTransactionsNotTransfer.length > 0) {
+            const allExpenseTransactions = allTransactionsNotTransfer.filter(transaction => transaction.type === "expense");
+            const allIncomeTransactions = allTransactionsNotTransfer.filter(transaction => transaction.type === "income");
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const monthsNumbers = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+            const lastMonth = lastDateInDatabase.split("-")[1];
+            const monthsToCompare = monthsNumbers.slice(0, lastMonth);
+
+            const totalExpenseAndIncomeByMonth = monthsToCompare.map((monthNumber, index) => {
+                const expenseTransactionsByMonth = allExpenseTransactions.filter(transaction => transaction.date.split("-")[1] === monthNumber);
+                const totalExpense = Math.round(expenseTransactionsByMonth.reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
+
+                const incomeTransactionsByMonth = allIncomeTransactions.filter(transaction => transaction.date.split("-")[1] === monthNumber);
+                const totalIncome = Math.round(incomeTransactionsByMonth.reduce((sum, transaction) => sum + transaction.amount, 0)*100)/100;
+
+                return { 
+                    month: months[index], 
+                    expense: totalExpense, 
+                    income: totalIncome };
+            });
+            setTotalExpenseAndIncomeByMonth(totalExpenseAndIncomeByMonth);
+        }
+    }, [allTransactionsNotTransfer, lastDateInDatabase]);
+    
+    // Getting all accounts with their id, type and total balance
+    useEffect(() => {
+        if (!userId) {
+            return;
+        }
+        const fetchAccountIds = async () => {
+            const { data, error } = await supabase_client
+                .from("accounts")
+                .select("id, name, type")
+                .eq("is_active", true)
+                .eq("user_id", userId);
+            if (error) {
+                console.log(error);
+            } else {
+                const accountIdsAndTypes = data.map(account => ({accountId: account.id, accountType: account.type, accountName: account.name}));
+                console.log("accountIdsAndTypes", accountIdsAndTypes);
+                if (allTransactionsNotTransfer.length > 0) {
+                    const balanceByAccountLastMonthInDatabase = accountIdsAndTypes.map(account=> {
+                        const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.accountId && transaction.type === "income" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
+                        const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.accountId && transaction.type === "expense" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);
+                        const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
+                        return {accountId: account.accountId, 
+                            accountType: account.accountType, 
+                            accountName: account.accountName, 
+                            totalBalance: totalBalanceByAccount};
+                    });
+                    const balanceByAccountPreviousMonth = accountIdsAndTypes.map(account=> {
+                        const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.accountId && transaction.type === "income" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
+                        const expenseBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.accountId && transaction.type === "expense" && transaction.date <= previousMonthDate).reduce((sum, transaction) => sum + transaction.amount, 0);
+                        const totalBalanceByAccount = Math.round((incomeBalance - expenseBalance)*100)/100;
+                        return {accountId: account.accountId, 
+                            accountType: account.accountType, 
+                            accountName: account.accountName, 
+                            totalBalance: totalBalanceByAccount};
+                    });
+                    setBalanceByAccountLastMonthInDatabase(balanceByAccountLastMonthInDatabase);
+                    setBalanceByAccountPreviousMonth(balanceByAccountPreviousMonth);
+                    setRefreshAccounts(false);
+                }
+            }
+        }
+        fetchAccountIds();
+    }, [allTransactionsNotTransfer, refreshAccounts]);
 
     // Getting assets, liabilities, and total
     useEffect(() => {
@@ -277,7 +298,10 @@ const SolvioProvider = ({ children }) => {
         transactionsInDatabase, setTransactionsInDatabase,
         categoriesInDatabase, setCategoriesInDatabase,
         balanceByAccountLastMonthInDatabase, setRefreshAccounts,
-        balanceByCategoryLastDateInDatabase,
+        balanceByCatLastAndPreviousDate,
+        allTransactionsNotTransfer, // [IncomeExpenseChart.jsx]
+        lastDateInDatabase, // [IncomeExpenseChart.jsx]
+        totalExpenseAndIncomeByMonth, // [IncomeExpenseChart.jsx]
         setRefreshTransactions,
         userId,
         setRefreshUserId

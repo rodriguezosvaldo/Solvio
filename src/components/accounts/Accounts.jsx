@@ -16,7 +16,6 @@ const Accounts = () => {
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
   const { transactionsInDatabase, categoriesInDatabase, userId, setRefreshTransactions, balanceByAccountLastMonthInDatabase, setRefreshAccounts, assetsLastMonthInDatabase, liabilitiesLastMonthInDatabase, totalLastMonthInDatabase } = useContext(SolvioContext);
 
-
   // Making sure that the bankStatement is not empty before showing the DefineCategory component
   useEffect(() => {
     if (bankStatement.data.length > 0) {

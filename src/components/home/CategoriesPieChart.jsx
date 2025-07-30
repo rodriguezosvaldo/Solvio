@@ -3,12 +3,12 @@ import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { SolvioContext } from '../../context/SolvioContext';
 
 const CategoriesPieChart = () => {
-    const { balanceByCategoryLastDateInDatabase } = useContext(SolvioContext);
+    const { balanceByCatLastAndPreviousDate } = useContext(SolvioContext);
 
     // Get the top 5 expense categories
     const topExpenseCategories = [];
     for (let i = 0; i < 5; i++) {
-      topExpenseCategories.push(balanceByCategoryLastDateInDatabase[i]);
+      topExpenseCategories.push(balanceByCatLastAndPreviousDate[i]);
     }
 
     // This block of code is given by the recharts documentation to customize the label of the pie chart
@@ -36,7 +36,7 @@ const CategoriesPieChart = () => {
               label={customizedLabel}
               labelLine={false}
             />
-          <Tooltip />
+          <Tooltip/> {/* It shows additional info when user interacts with the chart. I have to implement it later */}
           </PieChart>
         </ResponsiveContainer>
       </div>

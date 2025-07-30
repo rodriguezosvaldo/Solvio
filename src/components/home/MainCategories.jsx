@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useContext } from 'react'
 import CategoryAndValue from './CategoryAndValue'
 import TrendArrow from './TrendArrow'
 import { SolvioContext } from '../../context/SolvioContext'
 
 const MainCategories = () => {
-    const { balanceByCategoryLastDateInDatabase } = useContext(SolvioContext);
+    const { balanceByCatLastAndPreviousDate } = useContext(SolvioContext);
 
     // Get pop up message and reference for the trend arrow
     const trendArrowReference = (category) => {
@@ -33,7 +33,7 @@ const MainCategories = () => {
 
     return (
         <div className='flex flex-col border border-white/60 rounded-3xl p-4 w-full h-full'>
-            {balanceByCategoryLastDateInDatabase.map(category => {
+            {balanceByCatLastAndPreviousDate.map(category => {
                 return (
                     <div key={category.categoryId} className='flex flex-row items-center justify-center rounded-3xl p-4 w-full'>
                         <div className='flex items-center justify-center rounded-3xl p-4 w-full'>
@@ -58,4 +58,3 @@ const MainCategories = () => {
 }
 
 export default MainCategories;
-//Modify CategoryAndValue to show the categories with a bigger spending
