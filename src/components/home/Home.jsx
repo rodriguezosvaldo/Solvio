@@ -8,7 +8,7 @@ import CategoriesPieChart from './CategoriesPieChart'
 
 const Home = () => {
     return (
-        <div className='grid grid-cols-3 grid-rows-3 gap-4 w-full h-full'>
+        <div className='grid grid-cols-3 grid-rows-3 gap-4 w-full h-full overflow-hidden'>
             <div className='col-span-1 row-span-1'>
                 <GeneralBudget/>
             </div>

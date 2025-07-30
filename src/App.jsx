@@ -32,13 +32,19 @@ function App() {
   };
 
   return (
-    <div className="bg-black flex flex-col w-[768px] h-screen overflow-hidden">
-      <div className="flex-1 w-full p-4 overflow-y-auto">
-        <div className="transition-all duration-300 ease-in-out">
-          {renderComponent()}
-        </div>
+    <div className="bg-black flex flex-col w-[768px] h-screen justify-center items-center overflow-hidden rounded-2xl border border-white/60">
+      <div className="flex w-full h-full p-4 overflow-y-auto">
+        {renderComponent()}
       </div>
-      {renderNavbar()}
+
+      <div className="flex w-full p-4">
+        {renderNavbar()}
+      </div> 
+
+      <div className="flex flex-col w-full h-5 justify-center items-center">
+        <p className="text-white font-semibold text-xs">Developed with ❤️ by <a href="https://github.com/rodriguezosvaldo/" target="_blank" className="text-blue-500">Osvaldo Rodriguez</a></p>
+        <p className="text-white font-semibold text-xs">Special thanks to <a href="https://code-you.org/" target="_blank" className="text-blue-500">Code:You</a></p>
+      </div>
     </div>
   );
 }

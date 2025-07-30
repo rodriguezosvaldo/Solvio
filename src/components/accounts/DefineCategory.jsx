@@ -89,23 +89,19 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
         leaveDefineCategory();
     }
 
-    // Counter for the number of columns in the table
-    const mainKeys = ['date', 'description', 'amount'];
-    const counter = mainKeys.filter(key => bankStatementLowerCase[0][key] !== undefined).length;
-
     return (
-        <div className='bg-blue-700 flex flex-col w-full h-full text-sm justify-center items-center gap-4 p-4 overflow-hidden'>
-            <table className='w-full h-full justify-center items-center text-white text-center'>
+        <div className='bg-blue-950 flex flex-col w-full h-full text-sm justify-between items-center gap-8 p-4 overflow-y-auto rounded-3xl border border-white/60'>
+            <table className='w-full h-full justify-center items-center text-white text-center gap-4 p-4 overflow-y-auto'>
                 <thead>
                     <tr className='border-b-1 border-white'>
-                        <th colSpan={counter}>Bank Statement</th>
+                        <th colSpan={3}>Bank Statement</th>
                         <th>|</th>
                         <th colSpan={1}>Personalized<br/>Categories</th>
                     </tr>
                     <tr>
-                        {bankStatementLowerCase[0].date ? <th>Date</th> : ''}
-                        {bankStatementLowerCase[0].description ? <th>Description</th> : ''}
-                        {bankStatementLowerCase[0].amount ? <th>Amount</th> : ''}
+                        {bankStatementLowerCase[0].date ? <th className='w-1/3'>Date</th> : ''}
+                        {bankStatementLowerCase[0].description ? <th className='w-1/3'>Description</th> : ''}
+                        {bankStatementLowerCase[0].amount ? <th className='w-1/3'>Amount</th> : ''}
                         <th>|</th> 
                         <th>Category</th>
                     </tr>
@@ -140,7 +136,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
                 </tbody>
             </table>
             <button 
-            className='bg-green-500 text-white w-full p-2 rounded-md hover:scale-105 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed '
+            className='bg-green-700 text-white w-80 px-4 py-2 rounded-md hover:scale-105 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed '
             onClick={saveAllTransactions}
             disabled={Object.keys(categoryValues).length !== bankStatementLowerCase.length}
             >Save All</button>

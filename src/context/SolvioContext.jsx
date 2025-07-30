@@ -219,7 +219,6 @@ const SolvioProvider = ({ children }) => {
                 console.log(error);
             } else {
                 const accountIdsAndTypes = data.map(account => ({accountId: account.id, accountType: account.type, accountName: account.name}));
-                console.log("accountIdsAndTypes", accountIdsAndTypes);
                 if (allTransactionsNotTransfer.length > 0) {
                     const balanceByAccountLastMonthInDatabase = accountIdsAndTypes.map(account=> {
                         const incomeBalance = allTransactionsNotTransfer.filter(transaction => transaction.account_id === account.accountId && transaction.type === "income" && transaction.date <= lastDateInDatabase).reduce((sum, transaction) => sum + transaction.amount, 0);

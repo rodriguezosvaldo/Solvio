@@ -36,7 +36,6 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
         console.error("Error adding account:", error);
         alert("Error adding account: " + error.message);
       } else {
-        console.log("Account added successfully:", formDataAccount[0]);
         setRefreshAccounts(true);
         leaveAddAccount(); // Return to accounts list
       }
@@ -49,8 +48,8 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
   };
 
   return (
-    <div className="flex flex-col gap-6 text-white p-6 w-full h-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
-      <div className="flex justify-center items-center">
+    <div className="flex flex-col gap-6 text-white p-6 w-full h-full border-2 border-white/60 rounded-3xl">
+      <div className="flex justify-center items-center mb-10">
         <h2 className="text-2xl font-bold">New Account</h2>
       </div>
 
@@ -71,7 +70,7 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mb-10">
           <label htmlFor="type" className="text-lg font-semibold">
             Type
           </label>
@@ -89,19 +88,21 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
           </select>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-green-600 text-white hover:shadow-gray-200 hover:shadow-lg disabled:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition-colors mt-4"
-        >
-          {loading ? "Adding..." : "Add Account"}
-        </button>
-        <button
-          onClick={leaveAddAccount}
-          className="bg-red-600 text-white hover:shadow-gray-200 hover:shadow-lg px-6 py-3 rounded-lg font-semibold transition-colors"
-        >
-          Cancel
-        </button>
+        <div className="flex flex-col w-full justify-center items-center gap-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-green-600 w-80 px-6 py-3 text-white hover:shadow-gray-200 hover:scale-105 transition-all duration-300 hover:shadow-lg disabled:bg-gray-600 rounded-lg font-semibold"
+          >
+            {loading ? "Adding..." : "Add Account"}
+          </button>
+          <button
+            onClick={leaveAddAccount}
+            className="bg-red-600 w-80 px-6 py-3 text-white hover:shadow-gray-200 hover:scale-105 transition-all duration-300 hover:shadow-lg rounded-lg font-semibold"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -25,7 +25,6 @@ const Accounts = () => {
 
   // useCallback is used to prevent the function from being recreated on every render. Especially when the function is passed as a prop to a child component.
   const processCSV = useCallback((accountId, accountType, file, categoriesInDatabase, transactionsInDatabase) => {
-    console.log("Processing CSV+++++++++++++++++++++++++++++++++");
     // Parsing the CSV file using Papa Parse library to get the bank statement in an array of objects
     Papa.parse(file, {
       header: true, // Assume that the first row is the header
@@ -194,11 +193,9 @@ const Accounts = () => {
               maxCategory = category;
             }
           }
-          console.log("maxCategory+++++++++++++++++++++++++++++++++", maxCategory);
           return maxCategory;
       } else {
         console.log("No transactions in range of 6 months, have to use AI+++++++++++++++++++++++++++++++++");
-        console.log("categoriesInDatabase+++++++++++++++++++++++++++++++++", categoriesInDatabase);
         const randomCategory = categoriesInDatabase[Math.floor(Math.random() * categoriesInDatabase.length)].category;
         return randomCategory; // This is a temporary solution to avoid using the AI
       }
@@ -292,7 +289,7 @@ const Accounts = () => {
   const renderingAccountsByType = () => {
     if (balanceByAccountLastMonthInDatabase.length === 0) {
       return (
-        <div className="w-full h-full flex justify-center items-center text-white">
+        <div className="flex w-full h-full justify-center items-center text-white">
           No accounts found
         </div>
       );
@@ -355,19 +352,19 @@ const Accounts = () => {
 
   // Otherwise render the accounts list
   return (
-    <div className="flex flex-col gap-8 text-white p-6 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
+    <div className="flex flex-col w-full p-4 gap-4 text-white overflow-y-auto rounded-3xl">
       <button
-        className="bg-green-700 flex w-10 h-10 self-end justify-center items-center rounded-2xl"
+        className="bg-green-700 flex w-10 h-10 self-end justify-center items-center rounded-2xl hover:scale-105 transition-all duration-300"
         onClick={addAccount}
       >
         +
       </button>
-      <div className="flex gap-2 w-full justify-around items-center">
-        <CategoryAndValue label="Assets" value={assetsLastMonthInDatabase} />
-        <CategoryAndValue label="Liabilities" value={liabilitiesLastMonthInDatabase}/>
+      <div className="flex gap-2 w-full mb-4 justify-around items-center">
+        <CategoryAndValue label="Assets" value={assetsLastMonthInDatabase} color='green'/>
+        <CategoryAndValue label="Liabilities" value={liabilitiesLastMonthInDatabase} color='red'/>
         <CategoryAndValue label="Total" value={totalLastMonthInDatabase}/>
       </div>
-      <div className="flex flex-col gap-4 w-full overflow-y-auto border-2 border-yellow-500 rounded-3xl">
+      <div className="flex flex-col gap-8 w-full overflow-y-auto">
         {renderingAccountsByType()}
       </div>
     </div>

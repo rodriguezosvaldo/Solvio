@@ -40,32 +40,29 @@ const GeneralBudget = () => {
 
     
     return (
-        <div className='grid grid-cols-2 grid-rows-3 gap-4 border border-white/60 rounded-3xl p-4 w-full h-full'>
+        <div className='bg-black flex flex-col px-4 py-2 justify-around w-full h-full border border-white/60 rounded-3xl'>
             
-            <div className='flex items-center justify-center'>
-                <CategoryAndValue label='Assets' value={assetsLastMonthInDatabase} />
-            </div>
-            <div className='flex items-center justify-center'>
+            <div className='flex w-full justify-center items-center gap-4 rounded-3xl'>
+                <CategoryAndValue label='Assets' value={assetsLastMonthInDatabase} color='green'/>
+            
                 <TrendArrow 
                 reference={referenceAssets} 
                 popUpMessage={popUpMessageAssets}
                 />
             </div>
 
-            <div className='flex items-center justify-center'>
-                <CategoryAndValue label='Liabilities' value={liabilitiesLastMonthInDatabase} />
-            </div>
-            <div className='flex items-center justify-center'>
+            <div className='flex w-full justify-center items-center gap-4 rounded-3xl'>
+                <CategoryAndValue label='Liabilities' value={liabilitiesLastMonthInDatabase} color='red'/>
+            
                 <TrendArrow 
                 reference={referenceLiabilities} 
                 popUpMessage={popUpMessageLiabilities}
                 />
             </div>
 
-            <div className='flex items-center justify-center'>
-                <CategoryAndValue label='Total' value={totalLastMonthInDatabase} />
-            </div>
-            <div className='flex items-center justify-center'>
+            <div className='flex w-full justify-center items-center gap-4 rounded-3xl'>
+                <CategoryAndValue label='Total' value={totalLastMonthInDatabase}/>
+            
                 <TrendArrow 
                 reference={referenceTotal} 
                 popUpMessage={popUpMessageTotal}

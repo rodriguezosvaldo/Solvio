@@ -5,16 +5,17 @@ import { SolvioContext } from '../../context/SolvioContext';
 
 const IncomeExpenseChart = () => { 
   const { totalExpenseAndIncomeByMonth } = useContext(SolvioContext);
-  
-  return (
-  <div className='flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
-    <ResponsiveContainer width="100%" height="100%">
+
+  const renderChart = () => {
+    if (totalExpenseAndIncomeByMonth.length > 0) {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
       <LineChart
-          data={totalExpenseAndIncomeByMonth}
+          data={totalExpenseAndIncomeByMonth.length > 0 ? totalExpenseAndIncomeByMonth : exampleData}
           margin={{
             top: 5,
-            right: 30,
-            left: 20,
+            right: 20,
+            left: 0,
             bottom: 5,
           }}
         >
@@ -27,6 +28,20 @@ const IncomeExpenseChart = () => {
           <Line type="monotone" dataKey="income" stroke="green" />
       </LineChart>
     </ResponsiveContainer>
+      )
+    } else {
+      return (
+        <div className='flex w-full h-full text-white justify-center items-center gap-8 rounded-3xl p-2'>
+          <p>No data</p>
+        </div>
+      )
+    }
+  }
+  
+
+  return (
+  <div className='bg-black flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
+    {renderChart()}
   </div>
   )
 };

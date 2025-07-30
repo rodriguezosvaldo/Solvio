@@ -31,27 +31,36 @@ const MainCategories = () => {
         }
     }
 
-    return (
-        <div className='flex flex-col border border-white/60 rounded-3xl p-4 w-full h-full'>
+    const renderCategories = () => {
+        if (balanceByCatLastAndPreviousDate.length > 0) {
             {balanceByCatLastAndPreviousDate.map(category => {
                 return (
-                    <div key={category.categoryId} className='flex flex-row items-center justify-center rounded-3xl p-4 w-full'>
-                        <div className='flex items-center justify-center rounded-3xl p-4 w-full'>
+                    <div key={category.categoryId} className='flex w-full h-full justify-center items-center gap-8 rounded-3xl p-2'>
                             <CategoryAndValue 
-                            label={category.categoryName} 
+                            label={(category.categoryName).charAt(0).toUpperCase() + (category.categoryName).slice(1).toLowerCase()} 
                             value={category.lastMonthBalance}
                             color={category.fill}
                             />
-                        </div>
-                        <div className='flex items-center justify-center rounded-3xl p-4'>
+
                             <TrendArrow 
                                 popUpMessage={trendArrowReference(category).popUpMessage}
                                 reference={trendArrowReference(category).reference}
                             />
-                        </div>
                     </div>
                 )
             })}
+        } else {
+            return (
+                <div className='flex w-full h-full text-white justify-center items-center gap-8 rounded-3xl p-2'>
+                    <p>No data</p>
+                </div>
+            )
+        }
+    }
+
+    return (
+        <div className='bg-black flex flex-col w-full h-full gap-8 px-4 py-6 border border-white/60 rounded-3xl overflow-y-auto scrollbar-hide'>
+            {renderCategories()}
         </div>
     )
 

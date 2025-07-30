@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { SolvioContext } from '../../context/SolvioContext';
 
 const CategoriesPieChart = () => {
@@ -15,30 +15,56 @@ const CategoriesPieChart = () => {
     // The code customizes and places the label in the slice
     const RADIAN = Math.PI / 180;
     const customizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-      const x = cx + radius * Math.cos(-(midAngle ?? 0) * RADIAN);
-      const y = cy + radius * Math.sin(-(midAngle ?? 0) * RADIAN);
+      const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+      const x = cx - 3 + radius * Math.cos(-(midAngle ?? 0) * RADIAN);
+      const y = cy - 3 + radius * Math.sin(-(midAngle ?? 0) * RADIAN);
+      
+      const textAnchor = x > cx ? 'start' : 'end';
+      
       return (
-        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+        <text 
+          x={x} 
+          y={y} 
+          fill="white" 
+          textAnchor={textAnchor} 
+          dominantBaseline="central" 
+          fontSize="13"
+        >
           {`${((percent ?? 1) * 100).toFixed(0)}%`}
         </text>
       );
     };
 
+    const renderChart = () => {
+        if (balanceByCatLastAndPreviousDate.length > 0) {
+            return (
+              <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={topExpenseCategories}
+                  nameKey="categoryName"
+                  dataKey="lastMonthBalance"
+                  label={customizedLabel}
+                  labelLine={false}
+                  outerRadius={80}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )
+        } else {
+            return (
+                <div className='flex w-full h-full text-white justify-center items-center gap-8 rounded-3xl p-2'>
+                    <p>No data</p>
+                </div>  
+            )
+        }
+    }
+
     return (
-      <div className='flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
-       <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={topExpenseCategories}
-              nameKey="categoryName"
-              dataKey="lastMonthBalance"
-              label={customizedLabel}
-              labelLine={false}
-            />
-          <Tooltip/> {/* It shows additional info when user interacts with the chart. I have to implement it later */}
-          </PieChart>
-        </ResponsiveContainer>
+      <div className='bg-black flex flex-col w-full h-full justify-center items-center border border-white/60 rounded-3xl'>
+        <div className='flex w-full h-full justify-center items-center p-2'>
+          {renderChart()}
+        </div>
       </div>
         
         
