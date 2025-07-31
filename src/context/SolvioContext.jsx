@@ -24,10 +24,10 @@ const SolvioProvider = ({ children }) => {
     
     const [balanceByAccountLastMonthInDatabase, setBalanceByAccountLastMonthInDatabase] = useState([]); // []. List of all accounts with their id, type and total balance from all transactions until the last month registered in the database
     const [balanceByAccountPreviousMonth, setBalanceByAccountPreviousMonth] = useState([]); // []. List of all accounts with their id, type and total balance from all transactions until the previous month registered in the database, useful to get assets,liabilities, and total, and compare with last month for the trend arrow
-    const [refreshAccounts, setRefreshAccounts] = useState(true); // [, ]
+    const [refreshAccounts, setRefreshAccounts] = useState(false); // [, ]
     
     const [userId, setUserId] = useState(null); // [, ]
-    const [refreshUserId, setRefreshUserId] = useState(true); // [, ]
+    const [refreshUserId, setRefreshUserId] = useState(false); // [Login.jsx]
     const [loading, setLoading] = useState(true); // [, ]
 
     // Getting the user from the database
@@ -36,21 +36,22 @@ const SolvioProvider = ({ children }) => {
         try {
             const { data, error } = await supabase_client.auth.getUser();
             if (error) {
-            console.log('No user ++++++++++++++');
-            console.log(error);
-            setUserId(null);
-            return;
+                console.log('Error getting user++++++++++++++');
+                console.log(error);
+                return;
+            } else {
+                setUserId(data.user.id);
             }
-            setUserId(data.user.id);
         } catch (error) {
             setUserId(null);
             console.log(error);
         } finally {
+            setRefreshUserId(false);
             setLoading(false);
         }
         };
         checkUser();
-        setRefreshUserId(false);
+        
     }, [refreshUserId]); 
 
     // Getting all categories from the database
@@ -109,10 +110,13 @@ const SolvioProvider = ({ children }) => {
         };
         fetchTransactions();
         setRefreshTransactions(false);
-    }, [refreshTransactions, userId]);
+    }, [userId, refreshTransactions]);
 
     // Getting the last date in DB and previous month, also getting balance of each category on those dates
     useEffect(() => {
+        if (!userId) {
+            return;
+        }
         if (transactionsInDatabase.length > 0 && categoriesInDatabase.length > 0) {
             // Get all transactions excluding transferOut and transferIn because they are not assets or liabilities, only money moved between accounts
             const allTransactionsNotTransfer = transactionsInDatabase.filter(transaction => {
@@ -180,6 +184,9 @@ const SolvioProvider = ({ children }) => {
 
     // Getting total expense and income by month
     useEffect(() => {
+        if (!userId) {
+            return;
+        }
         if (lastDateInDatabase && allTransactionsNotTransfer.length > 0) {
             const allExpenseTransactions = allTransactionsNotTransfer.filter(transaction => transaction.type === "expense");
             const allIncomeTransactions = allTransactionsNotTransfer.filter(transaction => transaction.type === "income");
@@ -241,11 +248,28 @@ const SolvioProvider = ({ children }) => {
                     setBalanceByAccountLastMonthInDatabase(balanceByAccountLastMonthInDatabase);
                     setBalanceByAccountPreviousMonth(balanceByAccountPreviousMonth);
                     setRefreshAccounts(false);
+                } else {
+                    // If there is no transactions in the database, set the balance of each account to 0
+                    const balanceByAccountLastMonthInDatabase = accountIdsAndTypes.map(account=> {
+                        return {accountId: account.accountId, 
+                            accountType: account.accountType, 
+                            accountName: account.accountName, 
+                            totalBalance: 0};
+                    });
+                    const balanceByAccountPreviousMonth = accountIdsAndTypes.map(account=> {
+                        return {accountId: account.accountId, 
+                            accountType: account.accountType, 
+                            accountName: account.accountName, 
+                            totalBalance: 0};
+                    });
+                    setBalanceByAccountLastMonthInDatabase(balanceByAccountLastMonthInDatabase);
+                    setBalanceByAccountPreviousMonth(balanceByAccountPreviousMonth);
+                    setRefreshAccounts(false);
                 }
             }
         }
         fetchAccountIds();
-    }, [allTransactionsNotTransfer, refreshAccounts]);
+    }, [transactionsInDatabase, allTransactionsNotTransfer, refreshAccounts]);
 
     // Getting assets, liabilities, and total
     useEffect(() => {
@@ -254,12 +278,11 @@ const SolvioProvider = ({ children }) => {
         }
         const getAssetsLiabilitiesAndTotal = () => {
             if (transactionsInDatabase.length === 0) {
-                setAssets(0);
-                setLiabilities(0);
-                setTotal(0);
+                setAssetsLastMonthInDatabase(0);
+                setLiabilitiesLastMonthInDatabase(0);
+                setTotalLastMonthInDatabase(0);
                 return;
             }
-
             // Get assets, liabilities and total of the last month in the database
             const positiveBalancesLastMonth = balanceByAccountLastMonthInDatabase.filter(account => account.totalBalance >= 0);
             const negativeBalancesLastMonth = balanceByAccountLastMonthInDatabase.filter(account => account.totalBalance < 0);
@@ -286,7 +309,7 @@ const SolvioProvider = ({ children }) => {
     }, [balanceByAccountLastMonthInDatabase]);
 
     return (
-        loading ? <div>Cargando...</div> : !userId ? <Login /> :
+        loading ? <div>Cargando...</div> : !userId ? <Login setRefreshUserId={setRefreshUserId} /> :
         <SolvioContext.Provider value={{
         assetsLastMonthInDatabase,
         liabilitiesLastMonthInDatabase,
@@ -296,12 +319,13 @@ const SolvioProvider = ({ children }) => {
         totalPreviousMonth,
         transactionsInDatabase, setTransactionsInDatabase,
         categoriesInDatabase, setCategoriesInDatabase,
-        balanceByAccountLastMonthInDatabase, setRefreshAccounts,
+        balanceByAccountLastMonthInDatabase,
         balanceByCatLastAndPreviousDate,
         allTransactionsNotTransfer, // [IncomeExpenseChart.jsx]
         lastDateInDatabase, // [IncomeExpenseChart.jsx]
         totalExpenseAndIncomeByMonth, // [IncomeExpenseChart.jsx]
         setRefreshTransactions,
+        setRefreshAccounts,
         userId,
         setRefreshUserId
         }}>

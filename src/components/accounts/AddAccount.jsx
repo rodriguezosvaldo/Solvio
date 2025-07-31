@@ -27,7 +27,7 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
     setLoading(true);
 
     try {
-      const { data: formDataAccount, error } = await supabase_client
+      const { error } = await supabase_client
         .from("accounts")
         .insert(formData)
         .select();

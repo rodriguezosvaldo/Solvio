@@ -1,20 +1,42 @@
 import React from 'react';
 import NavbarBtn from './NavbarBtn';
 
-//Add the breackpoints later md:flex-col md:gap-8 md:w-fit
-const Navbar = ({ activeTab='home', setActiveTab }) => (
-  <nav className="bg-black flex justify-around w-full h-16 items-center px-4 py-2 rounded-3xl border border-white/60">
-    <NavbarBtn
-      label="Home"
-      onClick={() => setActiveTab('home')}
-      isActive={activeTab === 'home'}
-    />
-    <NavbarBtn
-      label="Accounts"
-      onClick={() => setActiveTab('accounts')}
-      isActive={activeTab === 'accounts'}
-    />
-  </nav>
-);
+const Navbar = ({ activeTab='home', setActiveTab }) => {
+  
+  const logout = async () => {
+
+    console.log("Need to implement logout function later");
+  //   try {
+  //     const { error } = await supabase_client.auth.signOut();
+  //     if (error) {
+  //       console.error("Error trying to logout+++", error);
+  //     } else {
+  //       console.log("Logout successful");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error trying to logout+++", error);
+  //   }
+  }
+  
+  return (
+    <nav className="bg-black flex justify-around w-full h-16 items-center px-4 py-2 rounded-3xl border border-white/60">
+      <NavbarBtn
+        label="Home"
+        onClick={() => setActiveTab('home')}
+        isActive={activeTab === 'home'}
+      />
+      <NavbarBtn
+        label="Accounts"
+        onClick={() => setActiveTab('accounts')}
+        isActive={activeTab === 'accounts'}
+      />
+      <NavbarBtn
+        label="Logout"
+        onClick={logout}
+      />
+    </nav>
+    )
+
+}
 
 export default Navbar;

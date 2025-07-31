@@ -9,6 +9,7 @@ import { SolvioContext } from "../../context/SolvioContext";
 
 
 const Accounts = () => {
+  
   // const [expenseCategories, setExpenseCategories] = useState([]); // This is for the AI prompt
   // const [incomeCategories, setIncomeCategories] = useState([]); // This is for the AI prompt
   const [showAddForm, setShowAddForm] = useState(false);

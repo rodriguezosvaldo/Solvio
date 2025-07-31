@@ -33,7 +33,7 @@ const MainCategories = () => {
 
     const renderCategories = () => {
         if (balanceByCatLastAndPreviousDate.length > 0) {
-            {balanceByCatLastAndPreviousDate.map(category => {
+            return balanceByCatLastAndPreviousDate.map(category => {
                 return (
                     <div key={category.categoryId} className='flex w-full h-full justify-center items-center gap-8 rounded-3xl p-2'>
                             <CategoryAndValue 
@@ -48,8 +48,8 @@ const MainCategories = () => {
                             />
                     </div>
                 )
-            })}
-        } else {
+            })
+        } else {    
             return (
                 <div className='flex w-full h-full text-white justify-center items-center gap-8 rounded-3xl p-2'>
                     <p>No data</p>
