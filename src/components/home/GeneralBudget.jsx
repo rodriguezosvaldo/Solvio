@@ -40,7 +40,7 @@ const GeneralBudget = () => {
 
     
     return (
-        <div className='bg-black flex flex-col px-4 py-2 justify-around w-full h-full border border-white/60 rounded-3xl'>
+        <div className='bg-black max-[375px]:text-[8px] max-sm:text-xs max-sm:px-2 max-sm:gap-2 flex flex-col px-4 py-2 justify-around w-full h-full border border-white/60 rounded-3xl'>
             
             <div className='flex w-full justify-center items-center gap-4 rounded-3xl'>
                 <CategoryAndValue label='Assets' value={assetsLastMonthInDatabase} color='green'/>

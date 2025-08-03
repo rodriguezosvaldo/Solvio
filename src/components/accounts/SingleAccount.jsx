@@ -16,15 +16,15 @@ const SingleAccount = ({ accountId, accountName, accountType, accountBalance, de
     }
     event.target.value = ""; //clear the input to allow selecting the same file again
   };
-
+  // max-[375px]:text-[8px]
   return (
-    <div className="flex gap-8 p-2 justify-between items-center w-full border-b-2 border-gray-600/40">
-      <div className="flex w-full justify-between items-center px-4">
-        <span className="text-sm text-gray-200">{accountName}</span>
-        <span className="text-sm text-gray-200">{accountBalance}</span>
+    <div className="flex sm:gap-8 gap-2 p-2 justify-between items-center w-full border-b-2 border-gray-600/40">
+      <div className="sm:px-4 sm:w-full max-[375px]:text-[10px] flex w-3/5 justify-between items-center px-0.5">
+        <span>{accountName}</span>
+        <span>{accountBalance}</span>
       </div>
 
-      <div className="flex gap-4 items-center px-4">
+      <div className="sm:w-full sm:gap-4 sm:px-4 flex w-2/5 justify-end gap-2 items-center px-2">
         {/* hidden input to upload .csv file */}
         <input
           ref={fileInputRef}
@@ -34,14 +34,14 @@ const SingleAccount = ({ accountId, accountName, accountType, accountBalance, de
           style={{ display: "none" }}
         />
         <button
-          className="bg-green-700 flex w-8 h-8 justify-center items-center text-xs rounded-3xl hover:scale-110 transition-all duration-300"
+          className="bg-green-700 sm:w-8 sm:h-8 max-[375px]:w-5 max-[375px]:h-5 max-[375px]:text-[8px] flex w-6 h-6 justify-center items-center text-xs rounded-3xl hover:scale-110 transition-all duration-300"
           onClick={csvClick}
         >
           CSV
         </button>
 
         <button
-          className="bg-red-900 flex w-8 h-8 justify-center items-center rounded-2xl hover:scale-110 transition-all duration-300"
+          className="bg-red-900 sm:w-8 sm:h-8 max-[375px]:w-5 max-[375px]:h-5 max-[375px]:text-[8px] flex w-6 h-6 justify-center items-center rounded-2xl hover:scale-110 transition-all duration-300"
           onClick={() => deleteAccount(accountId)}
         >
           <svg

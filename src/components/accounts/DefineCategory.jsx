@@ -90,7 +90,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     }
 
     return (
-        <div className='bg-blue-950 flex flex-col w-full h-full text-sm justify-between items-center gap-8 p-4 overflow-y-auto rounded-3xl border border-white/60'>
+        <div className='bg-blue-950 sm:text-base max-[375px]:text-[8px] flex flex-col w-full h-full text-xs justify-between items-center gap-8 p-4 overflow-y-auto rounded-3xl border border-white/60'>
             <table className='w-full h-full justify-center items-center text-white text-center gap-4 p-4 overflow-y-auto'>
                 <thead>
                     <tr className='border-b-1 border-white'>
@@ -136,7 +136,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
                 </tbody>
             </table>
             <button 
-            className='bg-green-700 text-white w-80 px-4 py-2 rounded-md hover:scale-105 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed '
+            className='bg-green-700 text-white sm:w-80 w-1/2 px-4 py-2 rounded-md hover:scale-105 transition-all duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed '
             onClick={saveAllTransactions}
             disabled={Object.keys(categoryValues).length !== bankStatementLowerCase.length}
             >Save All</button>

@@ -19,7 +19,7 @@ const Navbar = ({ activeTab='home', setActiveTab }) => {
   }
   
   return (
-    <nav className="bg-black flex justify-around w-full h-16 items-center px-4 py-2 rounded-3xl border border-white/60">
+    <nav className="bg-black flex min-[375px]:w-auto min-[375px]:h-auto sm:w-full sm:h-16 justify-around items-center gap-2 px-4 py-2 rounded-3xl border border-white/60">
       <NavbarBtn
         label="Home"
         onClick={() => setActiveTab('home')}

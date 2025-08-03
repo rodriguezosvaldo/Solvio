@@ -32,14 +32,14 @@ function App() {
   };
 
   return (
-    <div className="bg-black flex flex-col w-[768px] h-screen justify-center items-center overflow-hidden rounded-2xl border border-white/60">
-      <div className="flex w-full h-full p-4 overflow-y-auto">
+    <div className="bg-black sm:p-4 flex flex-col w-full h-screen justify-center items-center p-2 overflow-hidden rounded-2xl border border-white/60">
+      <div className="flex w-full h-full justify-center items-center p-4 overflow-y-auto">
         {renderComponent()}
       </div>
 
-      <div className="flex w-full p-4">
+      <div className="flex w-full justify-center items-center p-4">
         {renderNavbar()}
-      </div> 
+      </div>
 
       <div className="flex flex-col w-full h-5 justify-center items-center">
         <p className="text-white font-semibold text-xs">Developed with ❤️ by <a href="https://github.com/rodriguezosvaldo/" target="_blank" className="text-blue-500">Osvaldo Rodriguez</a></p>

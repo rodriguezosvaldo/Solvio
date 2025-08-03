@@ -59,7 +59,7 @@ const MainCategories = () => {
     }
 
     return (
-        <div className='bg-black flex flex-col w-full h-full gap-8 px-4 py-6 border border-white/60 rounded-3xl overflow-y-auto scrollbar-hide'>
+        <div className='bg-black max-sm:text-xs max-sm:px-2 max-sm:py-2 max-sm:gap-2 flex flex-col w-full h-full gap-8 px-4 py-6 border border-white/60 rounded-3xl overflow-y-auto scrollbar-hide'>
             {renderCategories()}
         </div>
     )

@@ -46,7 +46,6 @@ const CategoriesPieChart = () => {
                   dataKey="lastMonthBalance"
                   label={customizedLabel}
                   labelLine={false}
-                  outerRadius={80}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -61,7 +60,7 @@ const CategoriesPieChart = () => {
     }
 
     return (
-      <div className='bg-black flex flex-col w-full h-full justify-center items-center border border-white/60 rounded-3xl'>
+      <div className='bg-black sm:text-base text-xs flex w-full h-full justify-center items-center border border-white/60 rounded-3xl'>
         <div className='flex w-full h-full justify-center items-center p-2'>
           {renderChart()}
         </div>

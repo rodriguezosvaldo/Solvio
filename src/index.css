@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @plugin "@midudev/tailwind-animations";
 
+/* Breakpoints personalizados */
+@theme {
+  --breakpoint-xs: 320px;
+  --breakpoint-sm-custom: 425px;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

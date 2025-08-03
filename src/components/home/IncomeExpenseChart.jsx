@@ -40,7 +40,7 @@ const IncomeExpenseChart = () => {
   
 
   return (
-  <div className='bg-black flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
+  <div className='bg-black sm:text-base text-xs flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
     {renderChart()}
   </div>
   )

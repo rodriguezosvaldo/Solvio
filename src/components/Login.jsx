@@ -32,7 +32,9 @@ const Login = ({ setRefreshUserId }) => {
 
     return (
         <div className='bg-green-950 flex flex-col w-full h-full justify-center items-center gap-12 text-white'>
-            <img className='text-4xl font-bold' src={logo} alt="Solvio Logo" />
+            <div className='flex flex-col w-80 h-80 justify-center items-center gap-4'>
+                <img className='text-4xl font-bold' src={logo} alt="Solvio Logo" />
+            </div>
 
             <form className='bg-green-950 flex justify-center items-center gap-4 rounded-md p-4'
             onSubmit={handleSubmit}>
