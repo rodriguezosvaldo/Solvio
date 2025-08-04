@@ -35,7 +35,7 @@ const MainCategories = () => {
         if (balanceByCatLastAndPreviousDate.length > 0) {
             return balanceByCatLastAndPreviousDate.map(category => {
                 return (
-                    <div key={category.categoryId} className='flex w-full h-full justify-center items-center gap-8 rounded-3xl p-2'>
+                    <div key={category.categoryId} className='flex w-full h-full justify-center items-center gap-2 rounded-3xl p-2'>
                             <CategoryAndValue 
                             label={(category.categoryName).charAt(0).toUpperCase() + (category.categoryName).slice(1).toLowerCase()} 
                             value={category.lastMonthBalance}

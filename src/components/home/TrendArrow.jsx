@@ -1,7 +1,7 @@
 import React from 'react'
 
 const TrendArrow = ({ popUpMessage, reference }) => (
-  <div className={`${reference === 0 ? 'rotate-180' : ''}`} onMouseEnter={() => {
+  <div className={`${reference === 0 ? 'rotate-180' : ''} justify-self-end`} onMouseEnter={() => {
     console.log("popUpMessage+++++++++++", popUpMessage);
   }}>
     <svg width="2rem" 

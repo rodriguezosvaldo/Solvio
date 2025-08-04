@@ -30,6 +30,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     }
 
     const [categoryValues, setCategoryValues] = useState(initializeCategoryValues);
+    console.log(categoryValues);
 
     useEffect(() => {
         initializeCategoryValues();
@@ -37,9 +38,15 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     
 
     const storeCategory = (e, index) => {
+        const selectedCategoryId = e.target.value;
+        const selectedCategory = categoriesInDatabase.find(cat => cat.category_id == selectedCategoryId);
+        
         setCategoryValues(prev => ({
             ...prev,
-            [index]: e.target.value
+            [index]: {
+                category_id: selectedCategoryId,
+                category: selectedCategory ? selectedCategory.category : ''
+            }
         }));
     }
 
@@ -121,7 +128,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
                             <td className='p-2'>
                                 <select
                                 className='bg-white text-black disabled:bg-black'
-                                value={categoryValues[index].category_id ? categoryValues[index].category_id : ''}
+                                value={categoryValues[index] && categoryValues[index].category_id ? categoryValues[index].category_id : ''}
                                 required
                                 onChange={(e) => storeCategory(e, index)}
                                 >
