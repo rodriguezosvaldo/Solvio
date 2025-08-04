@@ -97,7 +97,7 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     }
 
     return (
-        <div className='bg-blue-950 sm:text-base max-[375px]:text-[8px] flex flex-col w-full h-full text-xs justify-between items-center gap-8 p-4 overflow-y-auto rounded-3xl border border-white/60'>
+        <div className='bg-blue-950 sm:text-base max-[375px]:text-[8px] flex flex-col w-full h-full text-xs justify-between items-center gap-8 p-4 overflow-y-auto rounded-3xl border border-white/60 animate-blurred-fade-in duration-300'>
             <table className='w-full h-full justify-center items-center text-white text-center gap-4 p-4 overflow-y-auto'>
                 <thead>
                     <tr className='border-b-1 border-white'>

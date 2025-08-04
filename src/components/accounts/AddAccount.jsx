@@ -48,7 +48,7 @@ const AddAccount = ({ leaveAddAccount, userId, setRefreshAccounts }) => {
   };
 
   return (
-    <div className="flex sm:text-base flex-col gap-6 text-white text-xs p-6 w-full h-full justify-center items-center border-2 border-white/60 rounded-3xl">
+    <div className="flex sm:text-base flex-col gap-6 text-white text-xs p-6 w-full h-full justify-center items-center border-2 border-white/60 rounded-3xl animate-blurred-fade-in duration-300">
       <div className="flex justify-center items-center mb-10">
         <h2 className="font-bold">New Account</h2>
       </div>

@@ -1,16 +1,16 @@
-# Solvio - Personal Finance Management App
+# Solvio - [Code:You](https://code-you.org/) Capstone Project
 
 ## About
 
 Solvio is a personal finance management application built with React and Supabase. Designed with a mobile first approach and a Bento Style UI, it helps users track their income, expenses, and overall financial health through an intuitive dashboard with visual analytics and charts. The app goal is to automatize to the maximum the process of entering data by the user without the need of linking the app to their bank account. Solvio allows the user to upload a .CSV file provided by their bank institution with their statements. Using different functions depending on the format of the file, it processes the data and returns a standarized format to be stored in the database. Each bank has a different .CSV format, the app currently supports Capital One credit and debit statements, but it is designed to be easily extended to support other banks, that is one of the objetives for future versions. Solvio integrates with an AI API to categorize the transactions automatically, it also allows the user to do it manually.
 
-##Features
+## Features
 
-- Analyze data that is stored in arrays, objects, sets or maps and display information about it in your app.
-- Visualize data in a user friendly way.
+- Analyze data that is stored in arrays, objects, and sets, and get relevant information from it to use in the app.
+- Visualize data in a user friendly way, using charts and tables.
 - Calculate and display data based on current date.
 - Interact with a PostgreSQL database on Supabase to store and retrieve information.
-- Implement modern interactive UI features (tables, data sorting).
+- Implement modern interactive UI features (tables, data sorting, charts).
 - Project developed using React.
 
 ## Tech Stack
@@ -20,18 +20,18 @@ Solvio is a personal finance management application built with React and Supabas
 - **Charts**: Recharts
 - **Backend**: Supabase (PostgreSQL database, authentication)
 - **AI Integration**: ??????
-- **CSV Processing**: PapaParse to process and parse .csv files.
+- **CSV Processing**: PapaParse to process .csv files getting an array of objects.
 
 ## Getting Started
 
 Before you begin, ensure you have the following installed:
 - [Node.js](https://nodejs.org/) (version 18 or higher)
 - [npm](https://www.npmjs.com/)
-- A Supabase account and project
+- A [Supabase](https://supabase.com/) account and project.
 
 ### Step 1: Clone the Repository
 
-### Step 2: Install Dependencies
+### Step 2: Install Dependencies (Listed in package.json)
 
 ```bash
 npm install
@@ -77,17 +77,17 @@ The application will be available at `http://localhost:5173`
 
 ```
 Solvio/
-├── database/                 # Database schema
-│   ├── schema.sql           # Database tables and initial data
-├── public/                  # Static assets
+├── database/                
+│   ├── schema.sql          # Database tables and initial data
+├── public/                 # Static assets (layout.png)
 ├── src/
-│   ├── components/          # React components
-│   │   ├── accounts/        # Account management components
-│   │   ├── home/           # Dashboard and analytics components
+│   ├── components/         # React components
+│   │   ├── accounts/       # Account management components
+│   │   ├── home/           # Dashboard and charts components
 │   │   └── navbar/         # Navigation components
 │   ├── context/            # React context for state management
 │   ├── supabase/           # Supabase client configuration
-│   └── assets/             # Images and other assets
+│   └── assets/             # Images and other assets (logo.png)
 ├── package.json            # Dependencies and scripts
 └── vite.config.js         # Vite configuration
 ```

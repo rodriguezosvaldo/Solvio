@@ -353,7 +353,7 @@ const Accounts = () => {
 
   // Otherwise render the accounts list
   return (
-    <div className="flex flex-col w-full p-4 gap-4 text-white overflow-y-auto rounded-3xl">
+    <div className="flex flex-col w-full p-4 gap-4 text-white overflow-y-auto rounded-3xl animate-blurred-fade-in duration-300">
       <button
         className="bg-green-700 flex sm:w-10 sm:h-10 w-7 h-7 self-end justify-center items-center rounded-2xl hover:scale-105 transition-all duration-300"
         onClick={addAccount}
