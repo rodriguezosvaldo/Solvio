@@ -9,25 +9,25 @@ const IncomeExpenseChart = () => {
   const renderChart = () => {
     if (totalExpenseAndIncomeByMonth.length > 0) {
       return (
-        <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-          data={totalExpenseAndIncomeByMonth.length > 0 ? totalExpenseAndIncomeByMonth : exampleData}
-          margin={{
-            top: 5,
-            right: 20,
-            left: 0,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="expense" stroke="red" activeDot={{ r: 8 }} />
-          <Line type="monotone" dataKey="income" stroke="green" />
-      </LineChart>
-    </ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%" className='p-2'>
+          <LineChart
+              data={totalExpenseAndIncomeByMonth.length > 0 ? totalExpenseAndIncomeByMonth : exampleData}
+              margin={{
+                top: 5,
+                right: 20,
+                left: 0,
+                bottom: 5,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3"/>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="expense" stroke="red" activeDot={{ r: 8 }} />
+              <Line type="monotone" dataKey="income" stroke="green" />
+          </LineChart>
+        </ResponsiveContainer>
       )
     } else {
       return (
@@ -40,7 +40,7 @@ const IncomeExpenseChart = () => {
   
 
   return (
-  <div className='bg-black sm:text-base text-xs flex flex-col gap-4 w-full h-full justify-center items-center border border-white/60 rounded-3xl p-4'>
+  <div className='bg-black sm:text-base text-xs flex flex-col w-full h-full justify-center items-center border border-white/60 rounded-3xl p-2'>
     {renderChart()}
   </div>
   )

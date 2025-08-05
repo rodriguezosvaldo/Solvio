@@ -76,12 +76,6 @@ const Accounts = () => {
   // the best way and models to use the AI...
   // const AIsuggestedCategory = async (description, amount) => {
   //   // Use the AI to define the category
-  //   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //   //MODIFICAR ESTO USANDO EDGE FUNCTIONS DE SUPABASE ++++++++++++++++++++++++++++++++++
-  //   const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
-  //   const ai = new GoogleGenAI({apiKey}); 
-  //   // PARA USAR LA API KEY DE GEMINI DESDE SUPABASE Y ASI NO EXPONERLA AL CLIENTE ++++++++++++++++++++++++++++++++++
-  //   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //   let prompt = ``;
   //   if (amount < 0) {
   //     prompt = `
@@ -153,7 +147,7 @@ const Accounts = () => {
     // El problema es que defineCategory es llamada desde bankStatement.map lo que hace que por cada
     // transaccion se haga una consulta a Supabase.
     // Para solucionar esto primero se obtienen todas las transacciones de la base de datos usando un useEffect
-    // que se ejecuta cada vez que se monta el componente.
+    // que se ejecuta en SolvioContext.jsx.
 
     const transfer = transactionsInDatabase.filter(transaction => {
       // Check for transactions in the range of 5 days before and after the date of the transaction
@@ -196,7 +190,7 @@ const Accounts = () => {
           }
           return maxCategory;
       } else {
-        console.log("No transactions in range of 6 months, have to use AI+++++++++++++++++++++++++++++++++");
+        // If there are no transactions in range of 6 months, use set category to "AI" to be defined later using AI
         const randomCategory = categoriesInDatabase[Math.floor(Math.random() * categoriesInDatabase.length)].category;
         return randomCategory; // This is a temporary solution to avoid using the AI
       }
@@ -213,7 +207,6 @@ const Accounts = () => {
     // Posted Date: "2025-07-08"
     // Transaction Date: "2025-07-07"
 
-    console.log("formatingCapitalOneCredit+++++++++++++++++++++++++++++++++");
     // Format the date to YYYY-MM-DD
     bankStatement.forEach(transaction => {
       transaction["Posted Date"] = formatDate_YYYY_MM_DD(transaction["Posted Date"]);
@@ -234,6 +227,7 @@ const Accounts = () => {
         ),
       }))
     );
+     
     return formattedBankStatement;
   };
 
@@ -246,7 +240,6 @@ const Accounts = () => {
     // Transaction Description: "Debit Card Purchase - SUNTRUST BANK ATLANTA GA"
     // Transaction Type: "Debit"
 
-    console.log("formatingCapitalOneDebit+++++++++++++++++++++++++++++++++");
     // Format the date to YYYY-MM-DD
     bankStatement.forEach(transaction => {
       transaction["Transaction Date"] = formatDate_YYYY_MM_DD(transaction["Transaction Date"]);

@@ -30,7 +30,6 @@ const DefineCategory = ({userId, accountId, bankStatement, categoriesInDatabase,
     }
 
     const [categoryValues, setCategoryValues] = useState(initializeCategoryValues);
-    console.log(categoryValues);
 
     useEffect(() => {
         initializeCategoryValues();
