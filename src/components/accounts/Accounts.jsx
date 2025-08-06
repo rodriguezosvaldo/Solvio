@@ -16,17 +16,20 @@ const Accounts = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDefineCategory, setShowDefineCategory] = useState(false);
   const [bankStatement, setBankStatement] = useState({ accountId: null, data: [] });
+  const [AIloading, setAIloading] = useState(false);
   const { transactionsInDatabase, categoriesInDatabase, userId, setRefreshTransactions, balanceByAccountLastMonthInDatabase, setRefreshAccounts, assetsLastMonthInDatabase, liabilitiesLastMonthInDatabase, totalLastMonthInDatabase } = useContext(SolvioContext);
 
   // Making sure that the bankStatement is not empty before showing the DefineCategory component
   useEffect(() => {
     if (bankStatement.data.length > 0) {
-      setShowDefineCategory(true);
+      setShowDefineCategory(true);  
+      setAIloading(false);
     }
   }, [bankStatement]);
 
   // useCallback is used to prevent the function from being recreated on every render. Especially when the function is passed as a prop to a child component.
   const processCSV = useCallback((accountId, accountType, file, categoriesInDatabase, transactionsInDatabase) => {
+    setAIloading(true);
     // Parsing the CSV file using Papa Parse library to get the bank statement in an array of objects
     Papa.parse(file, {
       header: true, // Assume that the first row is the header
@@ -83,15 +86,7 @@ const Accounts = () => {
     endDateObj.setDate(baseDate.getDate() + 5);
 
     const startDate = startDateObj.toISOString().split('T')[0]; // transforms date Object to an ISO string (example: 2025-07-16T00:00:00.000Z) 
-    const endDate = endDateObj.toISOString().split('T')[0];     // and then splits it using the T separator to get the date in the format "YYYY-MM-DD"
-
-    // NOTA: Aqui estaba teniendo un problema porque la AI sugeria en este punto hacer una consulta
-    // a Supabase para obtener todas las transacciones y seleccionar un rango de fechas para comparar
-    // descripcion y amount y definir la categoria. 
-    // El problema es que defineCategory es llamada desde bankStatement.map lo que hace que por cada
-    // transaccion se haga una consulta a Supabase.
-    // Para solucionar esto primero se obtienen todas las transacciones de la base de datos usando un useEffect
-    // que se ejecuta en SolvioContext.jsx.
+    const endDate = endDateObj.toISOString().split('T')[0];     // and then splits it using the T separator to get the date in the format "YYYY-MM-DD".
 
     const transfer = transactionsInDatabase.filter(transaction => {
       // Check for transactions in the range of 5 days before and after the date of the transaction
@@ -101,11 +96,15 @@ const Accounts = () => {
       transaction.date >= startDate && transaction.date <= endDate && transaction.description === description && transaction.account_id !== accountId;
     });
     if (transfer.length > 0 && amount > 0) {
+      console.log("transferIn++++++FOUND+++"); // Debugging++++++++++++++++
+      console.log("transfer++++++", transfer); // Debugging++++++++++++++++
       return "transferIn";
     } else if (transfer.length > 0 && amount < 0) {
+      console.log("transferOut++++++FOUND+++"); // Debugging++++++++++++++++
+      console.log("transfer++++++", transfer); // Debugging++++++++++++++++
       return "transferOut";
     } else {
-      // Before using the AI, check if in the database there are transactions with the same description
+      // Before using the AI, check if in the database are transactions with the same description
       // in the last 6 months. If there are, use the most common category as a suggested category.
       // If there are no transactions with the same description in the last 6 months, use the AI to define the category.
       const baseDate = new Date(date);
@@ -132,6 +131,8 @@ const Accounts = () => {
               maxCategory = category;
             }
           }
+          console.log("CATEGORY REPEATED FOUND++++++"); // Debugging++++++++++++++++
+          console.log("maxCategory++++++", maxCategory); // Debugging++++++++++++++++
           return maxCategory;
       } else {
         // If there are no transactions in range of 6 months, use set category to "AI" to be defined later using AI
@@ -228,8 +229,6 @@ const Accounts = () => {
           }
         });
       });
-      console.log("AIcategories+++++++++", AIcategories);
-      console.log("formattedBankStatement+++++++++", formattedBankStatement);
       return formattedBankStatement;
     } else {
       console.log("No transactions needing AI+++++++++");
@@ -285,13 +284,14 @@ const Accounts = () => {
     bankStatement.forEach(transaction => {
       transaction["Transaction Date"] = formatDate_YYYY_MM_DD(transaction["Transaction Date"]);
     });
+
     // Format the bankStatement and get the category for each transaction
     const formattedBankStatement = await Promise.all(
       bankStatement.map(async (transaction, index) => ({
         id: index,
         Date: transaction["Transaction Date"],
         Description: transaction["Transaction Description"],
-        Amount: transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
+        Amount: transaction["Transaction Type"] === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
         Category: await defineCategory(
           accountId,
           transaction["Transaction Date"],
@@ -386,25 +386,49 @@ const Accounts = () => {
       />
     );
   }
+  //
+  // If AIloading is true, render the AIloading component
+  const renderAIloading = () => {
+    if (AIloading) {
+      return (
+        <div className="fixed top-0 left-0 z-50 w-full h-full flex flex-col gap-8 justify-center items-center text-white bg-transparent backdrop-blur-sm">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#9CA3AF"
+              className="w-25 h-25 animate-pulsing animate-duration-[2s] [animation-iteration-count:infinite]">
+              <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+              <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1"></g>
+              <g id="SVGRepo_iconCarrier">
+                <path d="M20.5 9a3.49 3.49 0 0 0-3.45 3h-1.1a2.49 2.49 0 0 0-4.396-1.052L8.878 9.731l3.143-4.225a2.458 2.458 0 0 0 2.98-.019L17.339 8H16v1h3V6h-1v1.243l-2.336-2.512A2.473 2.473 0 0 0 16 3.5a2.5 2.5 0 0 0-5 0 2.474 2.474 0 0 0 .343 1.243L7.947 9.308 4.955 7.947a2.404 2.404 0 0 0-.161-1.438l3.704-1.385-.44 1.371.942.333L10 4 7.172 3l-.334.943 1.01.357-3.659 1.368a2.498 2.498 0 1 0-.682 4.117l2.085 2.688-2.053 2.76a2.5 2.5 0 1 0 .87 3.864l3.484 1.587-1.055.373.334.943L10 21l-1-2.828-.943.333.435 1.354-3.608-1.645A2.471 2.471 0 0 0 5 17.5a2.5 2.5 0 0 0-.058-.527l3.053-1.405 3.476 4.48a2.498 2.498 0 1 0 4.113.075L18 17.707V19h1v-3h-3v1h1.293l-2.416 2.416a2.466 2.466 0 0 0-2.667-.047l-3.283-4.23 2.554-1.176A2.494 2.494 0 0 0 15.95 13h1.1a3.493 3.493 0 1 0 3.45-4zm-7-7A1.5 1.5 0 1 1 12 3.5 1.502 1.502 0 0 1 13.5 2zm0 18a1.5 1.5 0 1 1-1.5 1.5 1.502 1.502 0 0 1 1.5-1.5zM1 7.5a1.5 1.5 0 1 1 2.457 1.145l-.144.112A1.496 1.496 0 0 1 1 7.5zm3.32 1.703a2.507 2.507 0 0 0 .264-.326l2.752 1.251-1.124 1.512zM2.5 19A1.5 1.5 0 1 1 4 17.5 1.502 1.502 0 0 1 2.5 19zm2.037-2.941a2.518 2.518 0 0 0-.193-.234l1.885-2.532 1.136 1.464zm3.76-1.731L6.849 12.46l1.42-1.908L11.1 11.84a2.29 2.29 0 0 0-.033 1.213zM13.5 14a1.5 1.5 0 1 1 1.5-1.5 1.502 1.502 0 0 1-1.5 1.5zm7 1a2.5 2.5 0 1 1 2.5-2.5 2.502 2.502 0 0 1-2.5 2.5zm1.5-2.5a1.5 1.5 0 1 1-1.5-1.5 1.502 1.502 0 0 1 1.5 1.5z"></path>
+                <path fill="none" d="M0 0h24v24H0z"></path>
+              </g>
+            </svg>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
 
   // Otherwise render the accounts list
   return (
-    <div className="flex flex-col w-full p-4 gap-4 text-white overflow-y-auto rounded-3xl animate-blurred-fade-in duration-300">
-      <button
-        className="bg-green-700 flex sm:w-10 sm:h-10 w-7 h-7 self-end justify-center items-center rounded-2xl hover:scale-105 transition-all duration-300"
-        onClick={addAccount}
-      >
-        +
-      </button>
-      <div className="flex gap-2 w-full mb-4 justify-around items-center">
-        <CategoryAndValue label="Assets" value={assetsLastMonthInDatabase} color='green'/>
-        <CategoryAndValue label="Liabilities" value={liabilitiesLastMonthInDatabase} color='red'/>
-        <CategoryAndValue label="Total" value={totalLastMonthInDatabase}/>
+    <>
+      {renderAIloading()}
+      <div className="flex flex-col w-full p-4 gap-4 text-white overflow-y-auto rounded-3xl animate-blurred-fade-in duration-300">
+        <button
+          className="bg-green-700 flex sm:w-10 sm:h-10 w-7 h-7 self-end justify-center items-center rounded-2xl hover:scale-105 transition-all duration-300"
+          onClick={addAccount}
+        >
+          +
+        </button>
+        <div className="flex gap-2 w-full mb-4 justify-around items-center">
+          <CategoryAndValue label="Assets" value={assetsLastMonthInDatabase} color='green'/>
+          <CategoryAndValue label="Liabilities" value={liabilitiesLastMonthInDatabase} color='red'/>
+          <CategoryAndValue label="Total" value={totalLastMonthInDatabase}/>
+        </div>
+        <div className="flex flex-col gap-8 w-full overflow-y-auto">
+          {renderingAccountsByType()}
+        </div>
       </div>
-      <div className="flex flex-col gap-8 w-full overflow-y-auto">
-        {renderingAccountsByType()}
-      </div>
-    </div>
+    </>
   );
 };
 export default Accounts;
