@@ -6,6 +6,7 @@ import supabase_client from "../../supabase/client";
 import DefineCategory from "./DefineCategory";
 import Papa from "papaparse";
 import { SolvioContext } from "../../context/SolvioContext";
+import { GoogleGenAI } from "@google/genai";
 
 
 const Accounts = () => {
@@ -72,64 +73,7 @@ const Accounts = () => {
     }
   };
 
-  // The AI suggested category is not used because it is not working as expected. I need more time to explore
-  // the best way and models to use the AI...
-  // const AIsuggestedCategory = async (description, amount) => {
-  //   // Use the AI to define the category
-  //   let prompt = ``;
-  //   if (amount < 0) {
-  //     prompt = `
-  //     You are a financial expert. Given a transaction, your task is to assign the most appropriate category from the provided list.
-  //     Transaction details:
-  //     - Description: ${description}
-  //     - Categories: ${expenseCategories}
-  //     Instructions:
-  //     - Choose only from the categories provided. Do not choose a category that is not in the list.
-  //     - Analyze the description for keywords to help determine the correct category, for example,
-  //     words like supermarket are usually related to the groceries category;
-  //     words like gas, Thorntons, Speedway, Circle K are usually related to transportation category;
-  //     words like Ross, Burlington, Mall are usually related to the clothing category;
-  //     - Make your response choosing only the category name, with no extra text, punctuation, or explanation.
-  //     - I repeat, do not choose a category that is not in the list. My life depends on it. Never give a blank response.
-  //     Example response:
-  //     groceries
-  //     `;
-  //   } else {
-  //     prompt = `
-  //     You are a financial expert. Given a transaction, your task is to assign the most appropriate category from the provided list.
-  //     Transaction details:
-  //     - Description: ${description}
-  //     - Categories: ${incomeCategories}
-  //     Instructions:
-  //     - Choose only from the categories provided. Do not choose a category that is not in the list.
-  //     - Analyze the description for keywords to help determine the correct category, for example,
-  //     words like deposit and received are usually related to the salary or other category;
-  //     - Make your response choosing only the category name, with no extra text, punctuation, or explanation.
-  //     - I repeat, do not choose a category that is not in the list. My life depends on it. Never give a blank response.
-  //     Example response:
-  //     salary
-  //     `;
-  //   }
-  //   // Using Gemini API
-  //   async function main() {
-  //     const response = await ai.models.generateContent({
-  //       model: "gemini-2.5-flash",
-  //       contents: prompt,
-  //     });
-  //     return response.text;
-  //   }
-  //   const categoryAI = await main();
-  //   categoryAI.toLowerCase();
-  //   console.log("AI suggested category+++++++++++++++++++++++++++++++++", categoryAI);
-  //   if (categoriesInDatabase.includes(categoryAI.trim())) {
-  //     return categoryAI.trim();
-  //   } else {
-  //     return "choose a category";
-  //   }
-  // };
-  
-
-  const defineCategory = async (accountId, date, description, amount, categoriesInDatabase, transactionsInDatabase) => {
+  const defineCategory = async (accountId, date, description, amount, transactionsInDatabase) => {
 
     // Define if the transaction is a transfer between accounts
     const baseDate = new Date(date);
@@ -191,12 +135,108 @@ const Accounts = () => {
           return maxCategory;
       } else {
         // If there are no transactions in range of 6 months, use set category to "AI" to be defined later using AI
-        const randomCategory = categoriesInDatabase[Math.floor(Math.random() * categoriesInDatabase.length)].category;
-        return randomCategory; // This is a temporary solution to avoid using the AI
+        return "Choose a category";
       }
     }
   };
-  
+
+  const defineCategoryAI = async (formattedBankStatement, categoriesInDatabase) => {
+    // Get transactions whose category needs to be defined by the AI
+    const transactionsNeedingAI = formattedBankStatement.filter(transaction => transaction.Category === "Choose a category");
+
+    if (transactionsNeedingAI.length > 0) {
+      // Getting just the id, amount and description of the transactions to send them to the AI in a clear format
+      const formattedForAI = transactionsNeedingAI.map(transaction => {
+        return {
+          id : transaction.id,
+          amount : transaction.Amount,
+          description : transaction.Description,
+        }
+      });
+
+      const getJSONforAI = (formattedForAI, categoriesInDatabase) => {
+        // Getting expense and transferOut categories, transactions with amount < 0, and specific prompt for these data
+        const expense = categoriesInDatabase.filter(category => category.categoryType === "expense");
+        const transferOut = categoriesInDatabase.filter(category => category.category === "transferOut");
+        const expenseCategory = [...expense, ...transferOut];
+        const expenseCategoryList = expenseCategory.map(category => category.category);
+        const expenseTransactions = formattedForAI.filter(transaction => transaction.amount < 0);
+        const expensePrompt = `You are a financial expert. Given the following transactions, analize the description of each transaction and assign them the most appropriate category from the provided categories list. Return each of the transaction id with the category assigned. Return only the JSON array, with no additional text.
+        Example response:
+        [
+          {id: 1, category: "groceries"},
+          {id: 2, category: "transportation"},
+          {id: 3, category: "clothing"},
+          {id: 4, category: "transferOut"},
+          {id: 5, category: "groceries"},
+        ]
+        `;
+
+        // Getting income and transferIn categories, transactions with amount > 0, and specific prompt for these data
+        const income = categoriesInDatabase.filter(category => category.categoryType === "income");
+        const transferIn = categoriesInDatabase.filter(category => category.category === "transferIn");
+        const incomeCategory = [...income, ...transferIn];
+        const incomeCategoryList = incomeCategory.map(category => category.category);
+        const incomeTransactions = formattedForAI.filter(transaction => transaction.amount > 0);
+        const incomePrompt = `You are a financial expert. Given the following transactions, analize the description of each transaction and assign them the most appropriate category from the provided categories list. Return each of the transaction id with the category assigned. Return only the JSON array, with no additional text.
+        Example response:
+        [
+          {id: 1, category: "salary"},
+          {id: 2, category: "investments"},
+          {id: 3, category: "transferIn"},
+          {id: 4, category: "salary"},
+          {id: 5, category: "transferIn"},
+        ]
+        `;
+
+        const expenseFormat = {
+          expensePrompt : expensePrompt,
+          expenseCategories : expenseCategoryList,
+          expenseTransactions : expenseTransactions,
+        } 
+
+        const incomeFormat = {
+          incomePrompt : incomePrompt,
+          incomeCategories : incomeCategoryList,
+          incomeTransactions : incomeTransactions,
+        } 
+        const finalPrompt = 'Finally, combine the results of the two prompts in a single JSON array. Return only the JSON array, with no additional text.';
+        const formatforAI = {...incomeFormat, ...expenseFormat, finalPrompt};
+        const JSONforAI = JSON.stringify(formatforAI);
+        return JSONforAI;
+      };
+      const JSONforAI = getJSONforAI(formattedForAI, categoriesInDatabase);
+
+      // Sending data to AI
+      const ai = new GoogleGenAI({apiKey: import.meta.env.VITE_GEMINI_API_KEY});
+      async function main(JSONforAI) {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: JSONforAI,
+        });
+        let rawResponse = response.text;
+        rawResponse = rawResponse.replace(/```json|```/g, ""); // Remove the ```json and ``` from the response (/g is a global flag, so it will replace all occurrences)
+        const AIResponse = JSON.parse(rawResponse);
+        return AIResponse;
+      }
+      
+      const AIcategories = await main(JSONforAI);
+      AIcategories.map(AIcategory => {
+        formattedBankStatement.forEach(transaction => {
+          if (transaction.id === AIcategory.id) {
+            transaction.Category = AIcategory.category;
+          }
+        });
+      });
+      console.log("AIcategories+++++++++", AIcategories);
+      console.log("formattedBankStatement+++++++++", formattedBankStatement);
+      return formattedBankStatement;
+    } else {
+      console.log("No transactions needing AI+++++++++");
+      return formattedBankStatement;
+    }
+  };
+
   const formatingCapitalOneCredit= async (accountId, bankStatement, categoriesInDatabase, transactionsInDatabase) => {
     // Capital One Credit Card bankStatement format:             
     // Card No.: "5678"
@@ -213,7 +253,8 @@ const Accounts = () => {
     });
     // Format the bankStatement and get the category for each transaction
     const formattedBankStatement = await Promise.all(
-      bankStatement.map(async transaction => ({
+      bankStatement.map(async (transaction, index) => ({
+        id: index,
         Date: transaction["Posted Date"],
         Description: transaction["Description"],
         Amount: transaction["Debit"] === "" ? transaction["Credit"] : -transaction["Debit"],
@@ -227,8 +268,8 @@ const Accounts = () => {
         ),
       }))
     );
-     
-    return formattedBankStatement;
+    const bankStatementReady = await defineCategoryAI(formattedBankStatement, categoriesInDatabase);
+    return bankStatementReady;
   };
 
   const formatingCapitalOneDebit= async (accountId, bankStatement, categoriesInDatabase, transactionsInDatabase) => {
@@ -246,7 +287,8 @@ const Accounts = () => {
     });
     // Format the bankStatement and get the category for each transaction
     const formattedBankStatement = await Promise.all(
-      bankStatement.map(async transaction => ({
+      bankStatement.map(async (transaction, index) => ({
+        id: index,
         Date: transaction["Transaction Date"],
         Description: transaction["Transaction Description"],
         Amount: transaction.transactionType === "Debit" ? -transaction["Transaction Amount"] : transaction["Transaction Amount"],
@@ -260,7 +302,8 @@ const Accounts = () => {
         ),
       }))
     );
-    return formattedBankStatement;
+    const bankStatementReady = await defineCategoryAI(formattedBankStatement, categoriesInDatabase);
+    return bankStatementReady;
   };
 
   const deleteAccount = useCallback(async (accountId) => {
