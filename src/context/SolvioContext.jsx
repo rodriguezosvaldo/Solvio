@@ -289,7 +289,7 @@ const SolvioProvider = ({ children }) => {
             const assetsLastMonth = Math.round(positiveBalancesLastMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
             const liabilitiesLastMonth = Math.round(negativeBalancesLastMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
             const absoluteLiabilitiesLastMonth = Math.abs(liabilitiesLastMonth);
-            const totalLastMonth = assetsLastMonth - absoluteLiabilitiesLastMonth;
+            const totalLastMonth = Math.round((assetsLastMonth - absoluteLiabilitiesLastMonth)*100)/100;
             setAssetsLastMonthInDatabase(assetsLastMonth);
             setLiabilitiesLastMonthInDatabase(liabilitiesLastMonth);  
             setTotalLastMonthInDatabase(totalLastMonth);
@@ -300,7 +300,7 @@ const SolvioProvider = ({ children }) => {
             const assetsPreviousMonth = Math.round(positiveBalancesPreviousMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
             const liabilitiesPreviousMonth = Math.round(negativeBalancesPreviousMonth.reduce((sum, account) => sum + account.totalBalance, 0)*100)/100;
             const absoluteLiabilitiesPreviousMonth = Math.abs(liabilitiesPreviousMonth);
-            const totalPreviousMonth = assetsPreviousMonth - absoluteLiabilitiesPreviousMonth;
+            const totalPreviousMonth = Math.round((assetsPreviousMonth - absoluteLiabilitiesPreviousMonth)*100)/100;
             setAssetsPreviousMonth(assetsPreviousMonth);
             setLiabilitiesPreviousMonth(liabilitiesPreviousMonth);
             setTotalPreviousMonth(totalPreviousMonth);
